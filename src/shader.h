@@ -5,17 +5,20 @@
 #ifndef MAIN_SHADER_H
 #define MAIN_SHADER_H
 
-#include <OpenGL/OpenGL.h>
-#include <ostream>
-#define GLFW_INCLUDE_GLCOREARB
-#include <GLFW/glfw3.h>
-#include <glm/glm.hpp>
-
-
 #include <string>
 #include <fstream>
 #include <sstream>
 #include <iostream>
+
+#ifdef __APPLE__
+#include <OpenGL/OpenGL.h>
+#elif __linux__
+#include <GL/gl.h>
+#endif
+#include <ostream>
+#define GLFW_INCLUDE_GLCOREARB
+#include <GLFW/glfw3.h>
+#include "glm/glm.hpp"
 
 
 class Shader

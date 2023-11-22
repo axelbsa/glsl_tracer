@@ -4,16 +4,18 @@
  *
  * Autor: Jakob Progsch
  */
+#ifdef __APPLE__
 #include <OpenGL/OpenGL.h>
+#elif __linux__
+#include <GL/glew.h>
+#endif
+
 #include <ostream>
 #define GLFW_INCLUDE_GLCOREARB
 #include <GLFW/glfw3.h>
 
-#include <fstream>
 #include <iostream>
-#include <string>
 #include <vector>
-#include <algorithm>
 #include "window.h"
 #include "shader.h"
 #include "Sphere.h"
@@ -54,8 +56,11 @@ int main() {
             glm::vec3(0.0f, 0.0f, 0.0f)
     };
 
-    Sphere sphere1{glm::vec3(0,0,-1), 0.5};
-    Sphere sphere2{glm::vec3(0,-100.5,-1), 100};
+    Sphere sphere0{glm::vec3(0,0,-1), 0.5};
+    Sphere sphere1{glm::vec3(0,-100.5,-1), 100};
+
+    fprintf(stderr, "Sphere0: radius %f\n", sphere0.radius);
+    fprintf(stderr, "Sphere1: radius %f\n", sphere1.radius);
 
     // get texture uniform location
 //    GLint texture_location = glGetUniformLocation(shader_program, "tex");
@@ -141,6 +146,9 @@ int main() {
     // set texture content
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, w.width, w.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, &image[0]);
 
+    double previousTime = glfwGetTime();
+    int frameCount = 0;
+
     while(!glfwWindowShouldClose(w.getGLFWWindow())) {
         glfwPollEvents();
 
@@ -150,6 +158,8 @@ int main() {
         // use the shader program
         s.use();
 
+        s.setInt("NUM_SPHERES", 2);
+
         // Camera Values
         s.setVec3("cam.lower_left_corner", r.lower_left_corner);
         s.setVec3("cam.horizontal", r.horizontal);
@@ -157,10 +167,10 @@ int main() {
         s.setVec3("cam.origin", r.origin);
 
         // Sphere values
-        s.setVec3("sphere[0].center", sphere1.center);
-        s.setFloat("sphere[0].radius", sphere1.radius);
-        s.setVec3("sphere[1].center", sphere2.center);
-        s.setFloat("sphere[1].radius", sphere2.radius);
+        s.setVec3("sphere[0].center", sphere0.center);
+        s.setFloat("sphere[0].radius", sphere0.radius);
+        s.setVec3("sphere[1].center", sphere1.center);
+        s.setFloat("sphere[1].radius", sphere1.radius);
 
         // bind texture to texture unit 0
         glActiveTexture(GL_TEXTURE0);
@@ -179,6 +189,20 @@ int main() {
         if(error != GL_NO_ERROR) {
             std::cerr << error << std::endl;
             break;
+        }
+
+        double currentTime = glfwGetTime();
+        frameCount++;
+        // If a second has passed.
+        double delta = currentTime - previousTime;
+        if ( delta >= 1.0 )
+        {
+            char title [256] = {"\0"};
+            snprintf ( title, 255,"%s - [FPS: %3.4f]", "texture", (float)frameCount / delta );
+            glfwSetWindowTitle (w.getGLFWWindow(), title);
+
+            frameCount = 0;
+            previousTime = currentTime;
         }
 
         // finally swap buffers

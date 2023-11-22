@@ -6,7 +6,7 @@
 #define MAIN_SPHERE_H
 
 
-#include <glm/vec3.hpp>
+#include "glm/glm.hpp"
 
 class Sphere {
 public:
