@@ -1,6 +1,10 @@
 #version 410
 
+#define MAX_FLOAT 1e5
 #define FLT_MAX 3.402823466e+38
+#define PHI 1.61803398874989484820459
+#define PI 3.1415926535897932385
+#define TAU 2. * PI
 
 struct Camera {
     vec3 lower_left_corner;
@@ -14,6 +18,7 @@ struct Sphere {
     float radius;
 };
 
+uniform float time;
 uniform sampler2D tex; // texture uniform
 uniform vec2 props;
 uniform int NUM_SPHERES;
@@ -24,6 +29,8 @@ in vec2 ftexcoord;
 in vec4 gl_FragCoord;
 
 layout(location = 0) out vec4 FragColor;
+
+float g_seed = 0.25;
 
 struct Ray {
     vec3 A;
@@ -42,6 +49,10 @@ float random(vec2 st)
 {
     //https://stackoverflow.com/questions/53500550/generating-a-pseudo-random-number-between-0-an-1-glsl-es
     return fract(sin(dot(st.xy, vec2(12.9898,78.233))) * 43758.5453123);
+}
+
+float random_golden (vec2 st) {
+    return fract(tan(distance(st*PHI, st)*g_seed)*st.x);
 }
 
 float RandomValue(inout uint state)
@@ -72,7 +83,16 @@ Ray get_ray(Camera cam, float u, float v)
     return Ray(cam.origin, cam.lower_left_corner + u*cam.horizontal + v*cam.vertical - cam.origin);
 }
 
-vec3 random_in_unit_sphere(inout uint state)
+vec3 random_in_unit_sphere(inout vec2 state2)
+{
+    vec3 p;
+    do {
+        p = 2.0f * vec3(random(state2), random(state2), random(state2)) - vec3(1.0f);
+    } while (length(p) >= 1.0);
+    return p;
+}
+
+vec3 random_in_unit_sphere2(inout uint state)
 {
     vec3 p;
     do {
@@ -118,7 +138,7 @@ bool hittable_list_hit(Ray r, float t_min, float t_max, inout hit_record rec)
 {
     hit_record temp_rec;
     bool hit_anything = false;
-    float closest_so_far = FLT_MAX;
+    float closest_so_far = MAX_FLOAT;
     for (int i = 0; i < NUM_SPHERES; i++)
     {
         temp_rec.index = i;
@@ -132,16 +152,16 @@ bool hittable_list_hit(Ray r, float t_min, float t_max, inout hit_record rec)
     return hit_anything;
 }
 
-vec3 color(Ray r, inout uint state)
+vec3 color(Ray r, inout uint state, inout vec2 state2)
 {
     Ray cur_ray = r;
     float cur_attenuation = 1.0f;
     for(int i = 0; i < 50; i++)
     {
         hit_record rec;
-        if ( hittable_list_hit(r, 0.001f, FLT_MAX, rec) )
+        if ( hittable_list_hit(cur_ray, 0.001f, MAX_FLOAT, rec) )
         {
-            vec3 target = rec.p + rec.normal + random_in_unit_sphere(state);
+            vec3 target = rec.p + rec.normal + random_in_unit_sphere2(state);
             cur_attenuation *= 0.5f;
             cur_ray = Ray(rec.p, target-rec.p);
         }
@@ -153,27 +173,29 @@ vec3 color(Ray r, inout uint state)
             return cur_attenuation * c;
         }
     }
-//    if ( hittable_list_hit(r, 0.0f, FLT_MAX, rec) )
-//    {
-//        return 0.5 * vec3(rec.normal.x + 1, rec.normal.y + 1, rec.normal.z + 1);
-//    }
-//    else
-//    {
-//        vec3 unit_direction = normalize(direction(r));
-//        float t = 0.5f * (unit_direction.y + 1.0f);
-//        return (1.0f - t) * vec3(1.0f) + t * vec3(0.5f, 0.7f, 1.0f);
-//    }
     return vec3(0.0,0.0,0.0);
 }
 
 void main() {
     vec2 st = gl_FragCoord.xy/props.xy;
     uint pixelIndex = int(gl_FragCoord.y * props.x + gl_FragCoord.x);
-    float u = float(gl_FragCoord.x + RandomValue(pixelIndex)) / float(props.x);
-    float v = float(gl_FragCoord.y + RandomValue(pixelIndex)) / float(props.y);
 
-    Ray r = get_ray(cam, u, v);
-    //Ray r = Ray(cam.origin, cam.lower_left_corner + u*cam.horizontal + v*cam.vertical);
-    FragColor = vec4( color(r, pixelIndex), 1.0);
+    g_seed = random(gl_FragCoord.xy * (mod(time, 100.)));
+    if(isnan(g_seed)){
+        g_seed = 0.25;
+    }
+
+    vec3 col = vec3(0.0f);
+
+#define ns 10
+    for (int i = 0; i < ns; i++)
+    {
+        float u = float(gl_FragCoord.x + RandomValue(pixelIndex)) / float(props.x);
+        float v = float(gl_FragCoord.y + RandomValue(pixelIndex)) / float(props.y);
+
+        Ray r = get_ray(cam, u, v);
+        col += color(r, pixelIndex, st);
+    }
+    FragColor = vec4(col / float(ns), 1.0f);
     //FragColor = texture(tex, ftexcoord);
 }

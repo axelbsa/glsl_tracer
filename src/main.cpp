@@ -151,6 +151,7 @@ int main() {
 
     while(!glfwWindowShouldClose(w.getGLFWWindow())) {
         glfwPollEvents();
+        double currentTime = glfwGetTime();
 
         // clear first
         glClear(GL_COLOR_BUFFER_BIT);
@@ -159,6 +160,7 @@ int main() {
         s.use();
 
         s.setInt("NUM_SPHERES", 2);
+        s.setFloat("time", currentTime);
 
         // Camera Values
         s.setVec3("cam.lower_left_corner", r.lower_left_corner);
@@ -191,7 +193,6 @@ int main() {
             break;
         }
 
-        double currentTime = glfwGetTime();
         frameCount++;
         // If a second has passed.
         double delta = currentTime - previousTime;
