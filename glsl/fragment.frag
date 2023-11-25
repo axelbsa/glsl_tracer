@@ -51,6 +51,10 @@ float random(vec2 st)
     return fract(sin(dot(st.xy, vec2(12.9898,78.233))) * 43758.5453123);
 }
 
+float drand48(vec2 co) {
+    return 2 * fract(sin(dot(co.xy, vec2(12.9898,78.233))) * 43758.5453) - 1;
+}
+
 float random_golden (vec2 st) {
     return fract(tan(distance(st*PHI, st)*g_seed)*st.x);
 }
@@ -83,12 +87,18 @@ Ray get_ray(Camera cam, float u, float v)
     return Ray(cam.origin, cam.lower_left_corner + u*cam.horizontal + v*cam.vertical - cam.origin);
 }
 
-vec3 random_in_unit_sphere(inout vec2 state2)
+float squared_length(vec3 v) {
+    return v.x*v.x + v.y*v.y + v.z*v.z;
+}
+
+vec3 random_in_unit_sphere(vec3 p)
 {
-    vec3 p;
+    int n = 0;
     do {
-        p = 2.0f * vec3(random(state2), random(state2), random(state2)) - vec3(1.0f);
-    } while (length(p) >= 1.0);
+        //p = 2.0f * vec3(random(state2), random(state2), random(state2)) - vec3(1.0f);
+        p = vec3(drand48(p.xy), drand48(p.zy), drand48(p.xz));
+        n++;
+    } while (squared_length(p) >= 1.0 && n < 3);
     return p;
 }
 
@@ -97,14 +107,26 @@ vec3 random_in_unit_sphere2(inout uint state)
     vec3 p;
     do {
         p = 2.0f * vec3(RandomValue(state), RandomValue(state), RandomValue(state)) - vec3(1.0f);
-    } while (length(p) >= 1.0);
+    } while (squared_length(p) >= 1.0);
     return p;
 }
 
-bool hit_sphere(Ray r, float t_min, float t_max, inout hit_record rec)
+vec3 random_unit_vector(inout uint state) {
+    return normalize(random_in_unit_sphere2(state));
+}
+
+vec3 random_on_hemisphere(vec3 normal, inout uint state) {
+    vec3 on_unit_sphere = random_unit_vector(state);
+    if (dot(on_unit_sphere, normal) > 0.0) // In the same hemisphere as the normal
+        return on_unit_sphere;
+    else
+        return -on_unit_sphere;
+}
+
+bool hit_sphere(Ray r, float t_min, float t_max, int object_index, inout hit_record rec)
 {
-    vec3 center = sphere[rec.index].center;
-    float radius = sphere[rec.index].radius;
+    vec3 center = sphere[object_index].center;
+    float radius = sphere[object_index].radius;
 
     vec3 oc = origin(r) - center;
     float a = dot(direction(r), direction(r));
@@ -141,8 +163,7 @@ bool hittable_list_hit(Ray r, float t_min, float t_max, inout hit_record rec)
     float closest_so_far = MAX_FLOAT;
     for (int i = 0; i < NUM_SPHERES; i++)
     {
-        temp_rec.index = i;
-        if (hit_sphere(r, t_min, closest_so_far, temp_rec))
+        if (hit_sphere(r, t_min, closest_so_far, i, temp_rec))
         {
             hit_anything = true;
             closest_so_far = temp_rec.t;
@@ -156,14 +177,16 @@ vec3 color(Ray r, inout uint state, inout vec2 state2)
 {
     Ray cur_ray = r;
     float cur_attenuation = 1.0f;
+    vec2 f = vec2(1.0);
     for(int i = 0; i < 50; i++)
     {
         hit_record rec;
         if ( hittable_list_hit(cur_ray, 0.001f, MAX_FLOAT, rec) )
         {
-            vec3 target = rec.p + rec.normal + random_in_unit_sphere2(state);
+            //vec3 target = rec.p + rec.normal + random_in_unit_sphere2(state);
+            vec3 direction = random_on_hemisphere(rec.normal, state);
             cur_attenuation *= 0.5f;
-            cur_ray = Ray(rec.p, target-rec.p);
+            cur_ray = Ray(rec.p, direction-rec.p);
         }
         else
         {
@@ -185,9 +208,9 @@ void main() {
         g_seed = 0.25;
     }
 
-    vec3 col = vec3(0.0f);
+    vec3 col = vec3(1.0f);
 
-#define ns 10
+#define ns 50
     for (int i = 0; i < ns; i++)
     {
         float u = float(gl_FragCoord.x + RandomValue(pixelIndex)) / float(props.x);

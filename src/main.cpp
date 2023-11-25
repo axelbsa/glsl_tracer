@@ -35,7 +35,7 @@ struct ray_cam {
 };
 
 int main() {
-    window w(1200, 600);
+    window w(1280, 720);
     w.init();
     w.setWindowHints(GLFW_CONTEXT_VERSION_MAJOR, 4);
     w.setWindowHints(GLFW_CONTEXT_VERSION_MINOR, 1);
@@ -49,14 +49,35 @@ int main() {
 
     Shader s("glsl/vertex.vert", "glsl/fragment.frag");
 
-    ray_cam r{
-            glm::vec3(-2.0f, -1.0f, -1.0f),
-            glm::vec3(4.0f, 0.0f, 0.0f),
-            glm::vec3(0.0f, 2.0f, 0.0f),
-            glm::vec3(0.0f, 0.0f, 0.0f)
-    };
+    //=====================================================================================
+    // Move this to the Camera class
+    const float aspect_ratio = 16.0f / 9.0f;
+    int image_width;
+    int image_height;
 
-    Sphere sphere0{glm::vec3(0,0,-1), 0.5};
+    float viewport_height = 2.0f;
+    float viewport_width = aspect_ratio * viewport_height;
+    float focal_length = 1.0f;
+
+    image_width = w.width;
+    image_height = static_cast<int>(image_width / aspect_ratio);
+
+    // Default camera
+    glm::vec3 origin = glm::vec3 (0.0f, 0.0f, 0.0f);
+    glm::vec3 horizontal = glm::vec3(viewport_width, 0.0f, 0.0f);
+    glm::vec3 vertical = glm::vec3(0.0f, viewport_height, 0.0f);
+    //lower_left_corner = make_float3(-2.0f, -1.0f, -1.0f);
+    glm::vec3 lower_left_corner = origin - horizontal/2.0f - vertical/2.0f - glm::vec3(0.0f, 0.0f, focal_length);
+
+    ray_cam r{
+            lower_left_corner,
+            horizontal,
+            vertical,
+            origin
+    };
+    //=======================================================================================
+
+    Sphere sphere0{glm::vec3(0,0.0f,-1), 0.5};
     Sphere sphere1{glm::vec3(0,-100.5,-1), 100};
 
     fprintf(stderr, "Sphere0: radius %f\n", sphere0.radius);
@@ -134,9 +155,6 @@ int main() {
         }
     }
 
-    //float myFloats[2] = {static_cast<float>(w.width), static_cast<float>(w.height)};
-    glm::vec2 myFloats(w.width, w.height);
-
     // set texture parameters
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
@@ -178,7 +196,7 @@ int main() {
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, texture);
 
-        s.setVec2("props", myFloats);
+        s.setVec2("props", glm::vec2(w.width, w.height));
 
         // bind the vao
         glBindVertexArray(vao);
