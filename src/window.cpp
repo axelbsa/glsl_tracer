@@ -3,11 +3,16 @@
 //
 #include <iostream>
 
-#ifdef __linux__
-#include <GL/glew.h>
+#ifdef __APPLE__
+#include <OpenGL/OpenGL.h>
+#elif __linux__
+#include <glad/glad.h>
+#else
+#include "glad/glad.h"
 #endif
 
 #include <GLFW/glfw3.h>
+#include "limits.h"
 
 #include "window.h"
 
@@ -28,17 +33,12 @@ uint32_t window::create() {
     glfwMakeContextCurrent(w);
     glfwSwapInterval( 0 );
 
-#ifdef __linux__
-    GLenum err = glewInit();
-    if (err != GLEW_OK) {
-        fprintf(stderr, "GLEW not initialized properly\n");
-        exit(1); // or handle the error in a nicer way
-    }
-    if (!GLEW_VERSION_3_3) {  // check that the machine supports the 2.1 API.
-        fprintf(stderr, "We dont have minimum OpenGL version\n");
-        exit(1); // or handle the error in a nicer way
-    }
-#endif
+    if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
+    {
+        fprintf(stderr, "Failed to initialize GLAD");
+        return -1;
+    }    
+
     return 0;
 }
 

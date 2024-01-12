@@ -5,6 +5,10 @@
 #ifndef MAIN_WINDOW_H
 #define MAIN_WINDOW_H
 
+#include <stdint.h>
+
+#include <GLFW/glfw3.h>
+
 
 class window {
 public:

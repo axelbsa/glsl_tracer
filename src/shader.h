@@ -14,9 +14,11 @@
 #include <OpenGL/OpenGL.h>
 #elif __linux__
 #include <GL/gl.h>
+#else
+#include "glad/glad.h"
 #endif
+
 #include <ostream>
-#define GLFW_INCLUDE_GLCOREARB
 #include <GLFW/glfw3.h>
 #include "glm/glm.hpp"
 
