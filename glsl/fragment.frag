@@ -106,7 +106,7 @@ vec3 random_in_unit_sphere2(inout uint state)
 {
     vec3 p;
     do {
-        p = 2.0f * vec3(RandomValue(state), RandomValue(state), RandomValue(state)) - vec3(1.0f);
+        p = 2.0f * vec3(RandomValue(state), RandomValue(state), RandomValue(state)) - vec3(1.0f, 1.0f, 1.0f);
     } while (squared_length(p) >= 1.0);
     return p;
 }
@@ -117,10 +117,13 @@ vec3 random_unit_vector(inout uint state) {
 
 vec3 random_on_hemisphere(vec3 normal, inout uint state) {
     vec3 on_unit_sphere = random_unit_vector(state);
-    if (dot(on_unit_sphere, normal) > 0.0) // In the same hemisphere as the normal
-        return on_unit_sphere;
-    else
-        return -on_unit_sphere;
+    return on_unit_sphere;
+
+    // THIS IS WRONG, SOMEHOW
+    //if (dot(on_unit_sphere, normal) > 0.0) // In the same hemisphere as the normal
+        //return on_unit_sphere;
+    //else
+        //return -on_unit_sphere;
 }
 
 bool hit_sphere(Ray r, float t_min, float t_max, int object_index, inout hit_record rec)
@@ -136,7 +139,7 @@ bool hit_sphere(Ray r, float t_min, float t_max, int object_index, inout hit_rec
 
     if (discriminant > 0)
     {
-        float temp = (-b - sqrt(b*b - a*c)) / a;
+        float temp = (-b - sqrt(discriminant)) / (2*a);
         if (temp < t_max && temp > t_min)
         {
             rec.t = temp;
@@ -144,7 +147,7 @@ bool hit_sphere(Ray r, float t_min, float t_max, int object_index, inout hit_rec
             rec.normal = (rec.p - center) / radius;
             return true;
         }
-        temp = (-b + sqrt(b*b - a*c)) / a;
+        temp = (-b + sqrt(discriminant)) / (2*a);
         if (temp < t_max && temp > t_min)
         {
             rec.t = temp;
@@ -183,10 +186,10 @@ vec3 color(Ray r, inout uint state, inout vec2 state2)
         hit_record rec;
         if ( hittable_list_hit(cur_ray, 0.001f, MAX_FLOAT, rec) )
         {
-            //vec3 target = rec.p + rec.normal + random_in_unit_sphere2(state);
-            vec3 direction = random_on_hemisphere(rec.normal, state);
+            vec3 target = rec.p + rec.normal + random_in_unit_sphere2(state);
+            //vec3 direction = random_on_hemisphere(rec.normal, state);
             cur_attenuation *= 0.5f;
-            cur_ray = Ray(rec.p, direction-rec.p);
+            cur_ray = Ray(rec.p, target-rec.p);
         }
         else
         {
@@ -219,6 +222,7 @@ void main() {
         Ray r = get_ray(cam, u, v);
         col += color(r, pixelIndex, st);
     }
+
     FragColor = vec4(col / float(ns), 1.0f);
     //FragColor = texture(tex, ftexcoord);
 }

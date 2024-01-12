@@ -77,11 +77,14 @@ int main() {
     };
     //=======================================================================================
 
-    Sphere sphere0{glm::vec3(0,0.0f,-1), 0.5};
+    Sphere sphere0{glm::vec3(0,-0.0f,-1), 0.5};
     Sphere sphere1{glm::vec3(0,-100.5,-1), 100};
 
     fprintf(stderr, "Sphere0: radius %f\n", sphere0.radius);
     fprintf(stderr, "Sphere1: radius %f\n", sphere1.radius);
+
+    fprintf(stderr, "Sphere0: position %f\n", sphere0.center.y);
+    fprintf(stderr, "Sphere1: position %f\n", sphere1.center.y);
 
     // get texture uniform location
 //    GLint texture_location = glGetUniformLocation(shader_program, "tex");
