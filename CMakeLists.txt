@@ -8,7 +8,7 @@ if(WIN32)
     set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
     set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
     add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/glfw)
-    
+
     set(CMAKE_INCLUDE_CURRENT_DIR ON)
     set(GLAD_DIR "${CMAKE_SOURCE_DIR}/src")
     include_directories(${CMAKE_SOURCE_DIR}\\src\\glad)
@@ -16,7 +16,7 @@ if(WIN32)
 
     find_package(OpenGL REQUIRED)
 
-    add_executable(main 
+    add_executable(main
         src/glad.c
         src/glad/glad.h
         src/main.cpp
@@ -50,7 +50,10 @@ else()
 
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -std=c++1y -Wall -Wextra -Wunused-function")
 
-    add_executable(main src/main.cpp
+    add_executable(main
+            src/glad.c
+            src/glad/glad.h
+            src/main.cpp
             src/window.cpp
             src/window.h
             src/shader.h

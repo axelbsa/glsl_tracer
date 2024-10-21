@@ -6,7 +6,7 @@
 #ifdef __APPLE__
 #include <OpenGL/OpenGL.h>
 #elif __linux__
-#include <glad/glad.h>
+#include "glad/glad.h"
 #else
 #include "glad/glad.h"
 #endif
@@ -37,7 +37,7 @@ uint32_t window::create() {
     {
         fprintf(stderr, "Failed to initialize GLAD");
         return -1;
-    }    
+    }
 
     return 0;
 }
@@ -51,4 +51,3 @@ uint32_t window::setWindowHints(uint32_t hint, uint32_t value) {
 GLFWwindow *window::getGLFWWindow() {
     return w;
 }
-
