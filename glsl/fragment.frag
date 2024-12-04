@@ -213,7 +213,7 @@ void main() {
 
     vec3 col = vec3(1.0f);
 
-#define ns 50
+#define ns 64
     for (int i = 0; i < ns; i++)
     {
         float u = float(gl_FragCoord.x + RandomValue(pixelIndex)) / float(props.x);
@@ -222,7 +222,9 @@ void main() {
         Ray r = get_ray(cam, u, v);
         col += color(r, pixelIndex, st);
     }
-
-    FragColor = vec4(col / float(ns), 1.0f);
+    col = col / ns;
+    col  = sqrt(col);
+    FragColor = vec4(col, 1.0f);
+    //FragColor = vec4(col / float(ns), 1.0f);  // This is only color div by number of samples
     //FragColor = texture(tex, ftexcoord);
 }
