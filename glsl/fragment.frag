@@ -213,7 +213,7 @@ void main() {
 
     vec3 col = vec3(1.0f);
 
-#define ns 64
+#define ns 10
     for (int i = 0; i < ns; i++)
     {
         float u = float(gl_FragCoord.x + RandomValue(pixelIndex)) / float(props.x);
@@ -222,9 +222,17 @@ void main() {
         Ray r = get_ray(cam, u, v);
         col += color(r, pixelIndex, st);
     }
-    col = col / ns;
-    col  = sqrt(col);
-    FragColor = vec4(col, 1.0f);
-    //FragColor = vec4(col / float(ns), 1.0f);  // This is only color div by number of samples
+    // Gamma2 as rt1w
+    //col = col / ns;
+    //col  = sqrt(col);
+    //FragColor = vec4(col, 1.0f);
+
+    // Gamma as in learnopengl
+    //float gamma = 1.6;
+    //col = col / ns;
+    //col.rgb = pow(col.rgb, vec3(1.0/gamma));
+    //FragColor = vec4(col, 1.0f);
+
+    FragColor = vec4(col / float(ns), 1.0f);  // This is only color div by number of samples
     //FragColor = texture(tex, ftexcoord);
 }
