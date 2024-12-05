@@ -16,6 +16,7 @@ struct Camera {
 struct Sphere {
     vec3 center;
     float radius;
+    int material_index;
 };
 
 uniform float time;
@@ -42,8 +43,13 @@ struct hit_record
     float t;
     vec3 p;
     vec3 normal;
-    int index;
+    int material_index;
 };
+
+bool lambertian_scatter(Ray r_in, hit_record rec, vec3 attenuation, Ray scattered)
+{
+    return true;
+}
 
 float random(vec2 st)
 {

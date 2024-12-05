@@ -26,6 +26,12 @@
 //        glfwSetWindowShouldClose(window, true);
 //}
 
+enum Material {
+    LAMBERTIAN,
+    METAL,
+    DIELECTRIC
+};
+
 struct ray_cam {
     glm::vec3 lower_left_corner;
     glm::vec3 horizontal;
@@ -76,8 +82,8 @@ int main() {
     };
     //=======================================================================================
 
-    Sphere sphere0{glm::vec3(0,-0.0f,-1), 0.5};
-    Sphere sphere1{glm::vec3(0,-100.5,-1), 100};
+    Sphere sphere0{glm::vec3(0,-0.0f,-1), 0.5, LAMBERTIAN};
+    Sphere sphere1{glm::vec3(0,-100.5,-1), 100, LAMBERTIAN};
 
     fprintf(stderr, "Sphere0: radius %f\n", sphere0.radius);
     fprintf(stderr, "Sphere1: radius %f\n", sphere1.radius);
@@ -85,6 +91,8 @@ int main() {
     fprintf(stderr, "Sphere0: position %f\n", sphere0.center.y);
     fprintf(stderr, "Sphere1: position %f\n", sphere1.center.y);
 
+    fprintf(stderr, "Sphere0: material %d\n", sphere0.material_index);
+    fprintf(stderr, "Sphere1: material %d\n", sphere1.material_index);
     // get texture uniform location
 //    GLint texture_location = glGetUniformLocation(shader_program, "tex");
 //    GLint props_location = glGetUniformLocation(shader_program, "props");
@@ -174,7 +182,7 @@ int main() {
         double currentTime = glfwGetTime();
 
         // clear first
-        glClear(GL_COLOR_BUFFER_BIT);
+        //glClear(GL_COLOR_BUFFER_BIT);
 
         // use the shader program
         s.use();
@@ -191,8 +199,11 @@ int main() {
         // Sphere values
         s.setVec3("sphere[0].center", sphere0.center);
         s.setFloat("sphere[0].radius", sphere0.radius);
+        s.setInt("sphere[0].material_index", LAMBERTIAN);
+
         s.setVec3("sphere[1].center", sphere1.center);
         s.setFloat("sphere[1].radius", sphere1.radius);
+        s.setInt("sphere[1].material_index", LAMBERTIAN);
 
         // bind texture to texture unit 0
         glActiveTexture(GL_TEXTURE0);
