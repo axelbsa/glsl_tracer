@@ -6,6 +6,12 @@
 #define PI 3.1415926535897932385
 #define TAU 2. * PI
 
+
+struct Ray {
+    vec3 A;
+    vec3 B;
+};
+
 struct Camera {
     vec3 lower_left_corner;
     vec3 horizontal;
@@ -17,6 +23,14 @@ struct Sphere {
     vec3 center;
     float radius;
     int material_index;
+};
+
+struct hit_record
+{
+    float t;
+    vec3 p;
+    vec3 normal;
+    int index;
 };
 
 uniform float time;
@@ -139,6 +153,22 @@ inout vec3 attenuation, inout Ray scattered)
     return true;
 }
 
+bool lambertian_material(Ray r, inout hit_record rec, inout vec3 attenuation, inout Ray scattered, inout uint state)
+{
+    vec3 target = rec.p + rec.normal + random_in_unit_sphere2(state);
+    scattered = Ray(rec.p, target - rec.p);
+    attenuation = vec3(0.7, 0.4, 0.3);
+    return true;
+}
+
+bool metal_material(Ray r, inout hit_record rec, inout vec3 attenuation, inout Ray scattered, inout uint state)
+{
+    vec3 reflected = reflect( normalize(direction(r)), rec.normal );
+    scattered = Ray(rec.p, reflected);
+    attenuation = vec3(0.6, 0.2, 0.3);
+    return ( dot( direction(scattered), rec.normal ) > 0 );
+}
+
 bool hit_sphere(Ray r, float t_min, float t_max, int object_index, inout hit_record rec)
 {
     vec3 center = sphere[object_index].center;
@@ -226,7 +256,7 @@ void main() {
 
     vec3 col = vec3(1.0f);
 
-#define ns 10
+#define ns 40
     for (int i = 0; i < ns; i++)
     {
         float u = float(gl_FragCoord.x + RandomValue(pixelIndex)) / float(props.x);
@@ -246,6 +276,9 @@ void main() {
     //col.rgb = pow(col.rgb, vec3(1.0/gamma));
     //FragColor = vec4(col, 1.0f);
 
-    FragColor = vec4(col / float(ns), 1.0f);  // This is only color div by number of samples
+    //FragColor = vec4(col / float(ns), 1.0f);  // This is only color div by number of samples
     //FragColor = texture(tex, ftexcoord);
+    col = col / ns;
+    //col = vec3(sqrt(col.x), sqrt(col.y), sqrt(col.z));
+    FragColor = vec4(col, 1.0f) * .999;
 }
