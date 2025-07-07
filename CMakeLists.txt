@@ -26,6 +26,9 @@ if(WIN32)
         src/camera.h
         src/Sphere.h
     )
+    set_target_properties(${PROJECT_NAME} PROPERTIES
+            RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}
+    )
 
     message(STATUS "GLAD is pointing to ${GLAD_DIR}")
     target_include_directories(main SYSTEM PRIVATE src)

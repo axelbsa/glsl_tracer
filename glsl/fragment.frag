@@ -46,15 +46,7 @@ struct hit_record
     int material_index;
 };
 
-bool lambertian_scatter(
-        inout Ray r_in, 
-        inout hit_record rec, 
-        inout vec3 attenuation, inout Ray scattered)
-{
-    vec3 target = rec.p + rec.normal + random_in_unit_sphere2(state);
-    scattered = Ray(rec.p, target-rec.p);
-    return true;
-}
+
 
 float random(vec2 st)
 {
@@ -135,6 +127,16 @@ vec3 random_on_hemisphere(vec3 normal, inout uint state) {
         //return on_unit_sphere;
     //else
         //return -on_unit_sphere;
+}
+
+bool lambertian_scatter(
+inout Ray r_in,
+inout hit_record rec,
+inout vec3 attenuation, inout Ray scattered)
+{
+/**    vec3 target = rec.p + rec.normal + random_in_unit_sphere2(state);
+    scattered = Ray(rec.p, target-rec.p);*/
+    return true;
 }
 
 bool hit_sphere(Ray r, float t_min, float t_max, int object_index, inout hit_record rec)
