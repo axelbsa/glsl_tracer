@@ -6,11 +6,17 @@
 #define PI 3.1415926535897932385
 #define TAU 2. * PI
 
+uniform float time;
+uniform sampler2D tex; // texture uniform
+uniform vec2 props;
+uniform int NUM_SPHERES;
+uniform Camera cam;
+uniform Sphere sphere[2];
 
-struct Ray {
-    vec3 A;
-    vec3 B;
-};
+in vec2 ftexcoord;
+in vec4 gl_FragCoord;
+
+layout(location = 0) out vec4 FragColor;
 
 struct Camera {
     vec3 lower_left_corner;
@@ -25,28 +31,6 @@ struct Sphere {
     int material_index;
 };
 
-struct hit_record
-{
-    float t;
-    vec3 p;
-    vec3 normal;
-    int index;
-};
-
-uniform float time;
-uniform sampler2D tex; // texture uniform
-uniform vec2 props;
-uniform int NUM_SPHERES;
-uniform Camera cam;
-uniform Sphere sphere[2];
-
-in vec2 ftexcoord;
-in vec4 gl_FragCoord;
-
-layout(location = 0) out vec4 FragColor;
-
-float g_seed = 0.25;
-
 struct Ray {
     vec3 A;
     vec3 B;
@@ -60,7 +44,7 @@ struct hit_record
     int material_index;
 };
 
-
+float g_seed = 0.25;
 
 float random(vec2 st)
 {
@@ -143,10 +127,7 @@ vec3 random_on_hemisphere(vec3 normal, inout uint state) {
         //return -on_unit_sphere;
 }
 
-bool lambertian_scatter(
-inout Ray r_in,
-inout hit_record rec,
-inout vec3 attenuation, inout Ray scattered)
+bool lambertian_scatter(inout Ray r_in, inout hit_record rec,inout vec3 attenuation, inout Ray scattered)
 {
 /**    vec3 target = rec.p + rec.normal + random_in_unit_sphere2(state);
     scattered = Ray(rec.p, target-rec.p);*/
