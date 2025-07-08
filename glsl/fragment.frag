@@ -1,22 +1,16 @@
 #version 410
 
+#define MAX_MATERIALS 32
 #define MAX_FLOAT 1e5
 #define FLT_MAX 3.402823466e+38
 #define PHI 1.61803398874989484820459
 #define PI 3.1415926535897932385
 #define TAU 2. * PI
 
-uniform float time;
-uniform sampler2D tex; // texture uniform
-uniform vec2 props;
-uniform int NUM_SPHERES;
-uniform Camera cam;
-uniform Sphere sphere[2];
-
-in vec2 ftexcoord;
-in vec4 gl_FragCoord;
-
-layout(location = 0) out vec4 FragColor;
+// Material types as mapped on the cpu
+#define LAMBERTIAN 0
+#define METAL 1
+#define DIELECTRIC 2
 
 struct Camera {
     vec3 lower_left_corner;
@@ -29,6 +23,7 @@ struct Sphere {
     vec3 center;
     float radius;
     int material_index;
+    int material_type;
 };
 
 struct Ray {
@@ -43,6 +38,29 @@ struct hit_record
     vec3 normal;
     int material_index;
 };
+
+uniform float time;
+uniform sampler2D tex; // texture uniform
+uniform vec2 props;
+uniform int NUM_SPHERES;
+uniform Camera cam;
+uniform Sphere sphere[2];
+
+// This is a little stupid, but values comes in quadruplets, albedo[0], roughness[0], fuzz[0], ior[0] defines 1 material
+uniform vec3 material_albedo[MAX_MATERIALS];
+uniform float material_roughness[MAX_MATERIALS];
+uniform float material_fuzz[MAX_MATERIALS];
+uniform float material_ior[MAX_MATERIALS];
+
+// The idea is to have this array of int's be a lookup table for if the material type is lambertian, metal, etc
+// ex: material_type = [2,0,1,2,3,1,0, ...] that way we don't need the material_type in the sphere struct
+// But for right now i feel it's better to ignore this "optimization" and just keep it in the sphere struct
+uniform int material_type[MAX_MATERIALS]; // 0=lambertian, 1=metal, 2=dielectric
+
+in vec2 ftexcoord;
+in vec4 gl_FragCoord;
+
+layout(location = 0) out vec4 FragColor;
 
 float g_seed = 0.25;
 
@@ -127,18 +145,11 @@ vec3 random_on_hemisphere(vec3 normal, inout uint state) {
         //return -on_unit_sphere;
 }
 
-bool lambertian_scatter(inout Ray r_in, inout hit_record rec,inout vec3 attenuation, inout Ray scattered)
-{
-/**    vec3 target = rec.p + rec.normal + random_in_unit_sphere2(state);
-    scattered = Ray(rec.p, target-rec.p);*/
-    return true;
-}
-
 bool lambertian_material(Ray r, inout hit_record rec, inout vec3 attenuation, inout Ray scattered, inout uint state)
 {
     vec3 target = rec.p + rec.normal + random_in_unit_sphere2(state);
     scattered = Ray(rec.p, target - rec.p);
-    attenuation = vec3(0.7, 0.4, 0.3);
+    attenuation = material_albedo[rec.material_index];  // Some color, this will need to be parametracized
     return true;
 }
 
@@ -146,7 +157,7 @@ bool metal_material(Ray r, inout hit_record rec, inout vec3 attenuation, inout R
 {
     vec3 reflected = reflect( normalize(direction(r)), rec.normal );
     scattered = Ray(rec.p, reflected);
-    attenuation = vec3(0.6, 0.2, 0.3);
+    attenuation = material_albedo[rec.material_index];  // Some color, this will need to be parametracized
     return ( dot( direction(scattered), rec.normal ) > 0 );
 }
 
@@ -169,6 +180,7 @@ bool hit_sphere(Ray r, float t_min, float t_max, int object_index, inout hit_rec
             rec.t = temp;
             rec.p = point_at_parameter(r, rec.t);
             rec.normal = (rec.p - center) / radius;
+            rec.material_index = sphere[object_index].material_index;
             return true;
         }
         temp = (-b + sqrt(discriminant)) / (2*a);
@@ -177,6 +189,7 @@ bool hit_sphere(Ray r, float t_min, float t_max, int object_index, inout hit_rec
             rec.t = temp;
             rec.p = point_at_parameter(r, rec.t);
             rec.normal = (rec.p - center) / radius;
+            rec.material_index = sphere[object_index].material_index;
             return true;
         }
     }
@@ -203,17 +216,37 @@ bool hittable_list_hit(Ray r, float t_min, float t_max, inout hit_record rec)
 vec3 color(Ray r, inout uint state, inout vec2 state2)
 {
     Ray cur_ray = r;
-    float cur_attenuation = 1.0f;
+    vec3 cur_attenuation = vec3(1.0f);
     vec2 f = vec2(1.0);
     for(int i = 0; i < 50; i++)
     {
         hit_record rec;
+        vec3 attenuation;
         if ( hittable_list_hit(cur_ray, 0.001f, MAX_FLOAT, rec) )
         {
+            if (rec.material_index == 0)
+            {
+                // bool lambertian_material(Ray r, inout hit_record rec, inout vec3 attenuation, inout Ray scattered, inout uint state)
+                lambertian_material(r, rec, attenuation, cur_ray, state);
+                cur_attenuation *= attenuation;
+
+            }
+            else if (rec.material_index == 1)
+            {
+                metal_material(r, rec, attenuation, cur_ray, state);
+                cur_attenuation *= attenuation;
+
+            }
+/**
+            if (rec.mat_prt->scatter(r, rec, attenuation, cur_ray, local_rand_state))
+            {
+                cur_attenuation *= attenuation;
+            }
             vec3 target = rec.p + rec.normal + random_in_unit_sphere2(state);
             //vec3 direction = random_on_hemisphere(rec.normal, state);
             cur_attenuation *= 0.5f;
             cur_ray = Ray(rec.p, target-rec.p);
+*/
         }
         else
         {
@@ -237,7 +270,7 @@ void main() {
 
     vec3 col = vec3(1.0f);
 
-#define ns 40
+#define ns 10
     for (int i = 0; i < ns; i++)
     {
         float u = float(gl_FragCoord.x + RandomValue(pixelIndex)) / float(props.x);

@@ -1,9 +1,3 @@
-/* OpenGL example code - Texture
- *
- * apply a texture to the fullscreen quad of "Indexed VBO"
- *
- * Autor: Jakob Progsch
- */
 #ifdef __APPLE__
 #include <OpenGL/OpenGL.h>
 #else
@@ -17,8 +11,8 @@
 #include <vector>
 #include "window.h"
 #include "shader.h"
-#include "Sphere.h"
-
+#include "sphere.h"
+#include "material.h"
 
 //void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
 //{
@@ -26,11 +20,6 @@
 //        glfwSetWindowShouldClose(window, true);
 //}
 
-enum Material {
-    LAMBERTIAN,
-    METAL,
-    DIELECTRIC
-};
 
 struct ray_cam {
     glm::vec3 lower_left_corner;
@@ -81,9 +70,11 @@ int main() {
             origin
     };
     //=======================================================================================
+    Material lambertian = Material::lambertian(glm::vec3(0.1f, 0.2f, 0.5f));
+    Material metal = Material::metal(glm::vec3(0.8f, 0.6f, 0.2f), 0.4f);
 
-    Sphere sphere0{glm::vec3(0,-0.0f,-1), 0.5, LAMBERTIAN};
-    Sphere sphere1{glm::vec3(0,-100.5,-1), 100, LAMBERTIAN};
+    sphere sphere0{glm::vec3(0,-0.0f,-1), 0.5, 0, LAMBERTIAN};
+    sphere sphere1{glm::vec3(0,-100.5,-1), 100, 1, METAL};
 
     fprintf(stderr, "Sphere0: radius %f\n", sphere0.radius);
     fprintf(stderr, "Sphere1: radius %f\n", sphere1.radius);
@@ -108,7 +99,7 @@ int main() {
     glGenBuffers(1, &vbo);
     glBindBuffer(GL_ARRAY_BUFFER, vbo);
 
-    // data for a fullscreen quad (this time with texture coords)
+    // data for a fullscreen quad (this time with texture coords yay!)
     GLfloat vertexData[] = {
         //  X     Y     Z           U     V
         1.0f, 1.0f, 0.0f,       1.0f, 1.0f, // vertex 0
@@ -194,14 +185,30 @@ int main() {
         s.setVec3("cam.vertical", r.vertical);
         s.setVec3("cam.origin", r.origin);
 
-        // Sphere values
+        // Material values
+        s.setVec3("material_albedo[0]", lambertian.albedo);
+        s.setFloat("material_roughness[0]", lambertian.roughness);
+        s.setFloat("material_fuzz[0]", lambertian.fuzz);
+        s.setFloat("material_ior[0]", lambertian.ior);
+
+        s.setVec3("material_albedo[1]", metal.albedo);
+        s.setFloat("material_roughness[1]", metal.roughness);
+        s.setFloat("material_fuzz[1]", metal.fuzz);
+        s.setFloat("material_ior[1]", metal.ior);
+
+        s.setInt("material_type[0]", METAL);
+        s.setInt("material_type[1]", LAMBERTIAN);
+
+        // sphere values
         s.setVec3("sphere[0].center", sphere0.center);
         s.setFloat("sphere[0].radius", sphere0.radius);
-        s.setInt("sphere[0].material_index", LAMBERTIAN);
+        s.setInt("sphere[0].material_index", 1);
+        s.setInt("sphere[0].material_type", METAL);
 
         s.setVec3("sphere[1].center", sphere1.center);
         s.setFloat("sphere[1].radius", sphere1.radius);
-        s.setInt("sphere[1].material_index", LAMBERTIAN);
+        s.setInt("sphere[1].material_index", 0);
+        s.setInt("sphere[1].material_type", LAMBERTIAN);
 
         // bind texture to texture unit 0
         glActiveTexture(GL_TEXTURE0);
