@@ -2,17 +2,6 @@ cmake_minimum_required(VERSION 3.18)
 
 project(main LANGUAGES C CXX)
 
-add_executable(main
-    src/glad.c
-    src/glad/glad.h
-    src/main.cpp
-    src/window.cpp
-    src/window.h
-    src/shader.h
-    src/camera.h
-    src/Sphere.h
-)
-
 if(WIN32)
     set(OpenGL_GL_PREFERENCE "LEGACY")
     set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)
@@ -35,7 +24,7 @@ if(WIN32)
         src/window.h
         src/shader.h
         src/camera.h
-            src/Sphere.h
+        src/Sphere.h
     )
     set_target_properties(${PROJECT_NAME} PROPERTIES
             RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}
@@ -56,7 +45,7 @@ else()
     find_package(glfw3 REQUIRED)
     message(STATUS "Found GLFW3 in ${GLFW3_INCLUDE_DIR}")
     add_compile_definitions(GL_SILENCE_DEPRECATION)
-    target_include_directories(main SYSTEM PRIVATE src)
+    # target_include_directories(main SYSTEM PRIVATE src)
 
 
     set(OpenGL_GL_PREFERENCE "LEGACY")
@@ -64,14 +53,6 @@ else()
     find_package(X11 REQUIRED)
 
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -std=c++1y -Wall -Wextra -Wunused-function")
-    if (APPLE)
-        target_link_libraries(main glfw OpenGL::GL)
-    else ()
-        find_package(GLEW REQUIRED)
-        message(STATUS "Found GLEW in ${GLEW_LIBRARIES}")
-        target_link_libraries(main glfw GLEW)
-        target_link_libraries(main OpenGL::GL)
-    endif ()
 
     add_executable(main
             src/glad.c
@@ -82,6 +63,17 @@ else()
             src/shader.h
             src/camera.h
             src/Sphere.h)
-    target_link_libraries(main glfw GLEW)
-    target_link_libraries(main OpenGL::GL)
+
+    set_target_properties(${PROJECT_NAME} PROPERTIES
+            RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}
+    )
+
+    if (APPLE)
+        target_link_libraries(main glfw OpenGL::GL)
+    else ()
+        find_package(GLEW REQUIRED)
+        message(STATUS "Found GLEW in ${GLEW_LIBRARIES}")
+        target_link_libraries(main glfw GLEW)
+        target_link_libraries(main OpenGL::GL)
+    endif ()
 endif()
