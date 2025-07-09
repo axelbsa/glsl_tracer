@@ -5,6 +5,7 @@
 #endif
 
 #include <ostream>
+#define GLFW_INCLUDE_GLCOREARB
 #include <GLFW/glfw3.h>
 
 #include <iostream>
@@ -75,6 +76,10 @@ int main() {
 
     sphere sphere0{glm::vec3(0,-0.0f,-1), 0.5, 0, LAMBERTIAN};
     sphere sphere1{glm::vec3(0,-100.5,-1), 100, 1, METAL};
+    //Sphere sphere0{glm::vec3(0,-0.0f,-1), 0.5};
+    //Sphere sphere1{glm::vec3(0,-100.5,-1), 100};
+    //Sphere sphere0{glm::vec3(0.0, 0.5f,-1), 0.5};
+    //Sphere sphere1{glm::vec3(0.0, -100.5,-1), 100};
 
     fprintf(stderr, "Sphere0: radius %f\n", sphere0.radius);
     fprintf(stderr, "Sphere1: radius %f\n", sphere1.radius);

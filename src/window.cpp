@@ -11,6 +11,7 @@
 #include "glad/glad.h"
 #endif
 
+#define GLFW_INCLUDE_GLCOREARB
 #include <GLFW/glfw3.h>
 #include "limits.h"
 
@@ -33,11 +34,13 @@ uint32_t window::create() {
     glfwMakeContextCurrent(w);
     glfwSwapInterval( 0 );
 
+#ifndef __APPLE__
     if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
     {
         fprintf(stderr, "Failed to initialize GLAD");
         return -1;
     }
+#endif
 
     return 0;
 }
