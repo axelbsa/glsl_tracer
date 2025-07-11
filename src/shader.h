@@ -22,6 +22,7 @@
 #define GLFW_INCLUDE_GLCOREARB
 #include <GLFW/glfw3.h>
 #include "glm/glm.hpp"
+#include "sphere.h"
 
 
 class Shader
@@ -112,6 +113,18 @@ public:
         if(geometryPath != nullptr)
             glDeleteShader(geometry);
 
+    }
+
+    void setSpheres(const std::vector<sphere>& spheres) const {
+        for (int i = 0; i < spheres.size(); ++i) {
+            std::string base = "sphere[" + std::to_string(i) + "]";
+
+            setVec3(base + ".center", spheres[i].center);
+            setFloat(base + ".radius", spheres[i].radius);
+            setInt(base + ".material_index", spheres[i].material_index);
+            setInt(base + ".material_type", spheres[i].material_type);
+        }
+        setInt("NUM_SPHERES", static_cast<int>(spheres.size()));
     }
 
 

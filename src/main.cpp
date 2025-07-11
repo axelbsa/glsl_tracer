@@ -182,6 +182,7 @@ int main() {
         // use the shader program
         s.use();
 
+        // All of the sphere setting, is moved to shader class look there.
         s.setInt("NUM_SPHERES", 2);
         s.setFloat("time", currentTime);
 

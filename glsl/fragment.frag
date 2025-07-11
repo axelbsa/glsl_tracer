@@ -6,6 +6,7 @@
 #define PHI 1.61803398874989484820459
 #define PI 3.1415926535897932385
 #define TAU 2. * PI
+#define MAX_SPEHERS 256
 
 // Material types as mapped on the cpu
 #define LAMBERTIAN 0
@@ -44,7 +45,7 @@ uniform sampler2D tex; // texture uniform
 uniform vec2 props;
 uniform int NUM_SPHERES;
 uniform Camera cam;
-uniform Sphere sphere[2];
+uniform Sphere sphere[MAX_SPEHERS];
 
 // This is a little stupid, but values comes in quadruplets, albedo[0], roughness[0], fuzz[0], ior[0] defines 1 material
 uniform vec3 material_albedo[MAX_MATERIALS];
