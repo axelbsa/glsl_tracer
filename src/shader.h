@@ -21,8 +21,10 @@
 #include <ostream>
 #define GLFW_INCLUDE_GLCOREARB
 #include <GLFW/glfw3.h>
+
+#include "material.h"
 #include "glm/glm.hpp"
-#include "sphere.h"
+#include "Sphere.h"
 
 
 class Shader
@@ -115,14 +117,40 @@ public:
 
     }
 
-    void setSpheres(const std::vector<sphere>& spheres) const {
+    // Upload all data to GPU
+    void setMaterials(const std::vector<Material> &materials) const {
+        // Upload material data
+        if (!materials.empty()) {
+            std::vector<glm::vec3> albedos;
+            std::vector<float> roughness_values;
+            std::vector<int> types;
+            std::vector<float> fuzz_values;
+            std::vector<float> ior_values;
+
+            for (const auto& mat : materials) {
+                albedos.push_back(mat.albedo);
+                roughness_values.push_back(mat.roughness);
+                types.push_back(static_cast<int>(mat.type));
+                fuzz_values.push_back(mat.fuzz);
+                ior_values.push_back(mat.ior);
+            }
+
+            setVec3("material_albedo", albedos[0], albedos.size());
+            setFloatArray("material_roughness", roughness_values.data(), roughness_values.size());
+            setIntArray("material_type", types.data(), types.size());
+            setFloatArray("material_fuzz", fuzz_values.data(), fuzz_values.size());
+            setFloatArray("material_ior", ior_values.data(), ior_values.size());
+        }
+    }
+
+    void setSpheres(const std::vector<Sphere>& spheres) const {
         for (int i = 0; i < spheres.size(); ++i) {
             std::string base = "sphere[" + std::to_string(i) + "]";
 
             setVec3(base + ".center", spheres[i].center);
             setFloat(base + ".radius", spheres[i].radius);
             setInt(base + ".material_index", spheres[i].material_index);
-            setInt(base + ".material_type", spheres[i].material_type);
+            //setInt(base + ".material_type", spheres[i].material_type);
         }
         setInt("NUM_SPHERES", static_cast<int>(spheres.size()));
     }
@@ -130,16 +158,15 @@ public:
 
     // activate the shader
     // ------------------------------------------------------------------------
-    void use()
-    {
+    void use() const {
         glUseProgram(ID);
     }
 
     // utility uniform functions
     // ------------------------------------------------------------------------
-    void setBool(const std::string &name, bool value) const
+    void setBool(const std::string &name, const bool value) const
     {
-        glUniform1i(glGetUniformLocation(ID, name.c_str()), (int)value);
+        glUniform1i(glGetUniformLocation(ID, name.c_str()), static_cast<int>(value));
     }
 
     void setInt(const std::string &name, int value) const
@@ -147,10 +174,19 @@ public:
         glUniform1i(glGetUniformLocation(ID, name.c_str()), value);
     }
 
-    void setFloat(const std::string &name, float value) const
+    void setIntArray(const std::string &name, const int* values, const int count) const
     {
+        glUniform1iv(glGetUniformLocation(ID, name.c_str()), count, values);
+    }
 
+    void setFloat(const std::string &name, const float value) const
+    {
         glUniform1f(glGetUniformLocation(ID, name.c_str()), value);
+    }
+
+    void setFloatArray(const std::string &name, const float* values, const int count) const
+    {
+        glUniform1fv(glGetUniformLocation(ID, name.c_str()), count, values);
     }
 
     void setVec2(const std::string &name, const glm::vec2 &value) const
@@ -161,6 +197,11 @@ public:
     void setVec2(const std::string &name, float x, float y) const
     {
         glUniform2f(glGetUniformLocation(ID, name.c_str()), x, y);
+    }
+
+    void setVec3(const std::string &name, const glm::vec3 &value, const int count) const
+    {
+        glUniform3fv(glGetUniformLocation(ID, name.c_str()), count, &value[0]);
     }
 
     void setVec3(const std::string &name, const glm::vec3 &value) const
@@ -197,6 +238,9 @@ public:
     {
         glUniformMatrix4fv(glGetUniformLocation(ID, name.c_str()), 1, GL_FALSE, &mat[0][0]);
     }
+
+
+
 
 private:
     // utility function for checking shader compilation/linking errors.

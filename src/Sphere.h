@@ -8,11 +8,12 @@
 
 #include "glm/glm.hpp"
 
-class Sphere {
+class sphere {
 public:
     glm::vec3 center;
     float radius;
     int material_index;
+    int material_type;
 };
 
 #endif //MAIN_SPHERE_H

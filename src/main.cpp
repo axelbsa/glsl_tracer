@@ -7,12 +7,13 @@
 #include <ostream>
 #define GLFW_INCLUDE_GLCOREARB
 #include <GLFW/glfw3.h>
+//#include <gl/gl.h>
 
 #include <iostream>
 #include <vector>
 #include "window.h"
 #include "shader.h"
-#include "sphere.h"
+#include "Sphere.h"
 #include "material.h"
 
 //void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
@@ -71,11 +72,31 @@ int main() {
             origin
     };
     //=======================================================================================
-    Material lambertian = Material::lambertian(glm::vec3(0.1f, 0.2f, 0.5f));
-    Material metal = Material::metal(glm::vec3(0.8f, 0.6f, 0.2f), 0.4f);
+    Material lambertian_0 = Material::lambertian(glm::vec3(0.8f, 0.3f, 0.3f));
+    Material lambertian_1 = Material::lambertian(glm::vec3(0.8f, 0.8f, 0.0f));
 
-    sphere sphere0{glm::vec3(0,-0.0f,-1), 0.5, 0, LAMBERTIAN};
-    sphere sphere1{glm::vec3(0,-100.5,-1), 100, 1, METAL};
+    Material metal_2 = Material::metal(glm::vec3(0.8f, 0.6f, 0.2f), 0.1f);
+    Material metal_3 = Material::metal(glm::vec3(0.8f, 0.8f, 0.8f), 1.0f);
+
+    Sphere sphere0{glm::vec3(0,-0.0f,-1), 0.5, 0};
+    Sphere sphere1{glm::vec3(0,-100.5,-1), 100, 1};
+
+    Sphere sphere2{glm::vec3(1,-0.0f,-1), 0.5, 2};
+    Sphere sphere3{glm::vec3(-1,-0.0f,-1), 0.5, 3};
+
+    std::vector<Sphere> world = {
+        sphere0,
+        sphere1,
+        sphere2,
+        sphere3,
+    };
+
+    std::vector<Material> materials = {
+        lambertian_0,
+        lambertian_1,
+        metal_2,
+        metal_3,
+    };
 
     //Sphere sphere0{glm::vec3(0,-0.0f,-1), 0.5};
     //Sphere sphere1{glm::vec3(0,-100.5,-1), 100};
@@ -182,8 +203,8 @@ int main() {
         // use the shader program
         s.use();
 
-        // All of the sphere setting, is moved to shader class look there.
-        s.setInt("NUM_SPHERES", 2);
+        // All of the Sphere setting is moved to shader class look there.
+        //s.setInt("NUM_SPHERES", 2);
         s.setFloat("time", currentTime);
 
         // Camera Values
@@ -193,29 +214,36 @@ int main() {
         s.setVec3("cam.origin", r.origin);
 
         // Material values
-        s.setVec3("material_albedo[0]", lambertian.albedo);
-        s.setFloat("material_roughness[0]", lambertian.roughness);
-        s.setFloat("material_fuzz[0]", lambertian.fuzz);
-        s.setFloat("material_ior[0]", lambertian.ior);
+        /*
+        s.setVec3("material_albedo[0]", lambertian_1.albedo);
+        s.setFloat("material_roughness[0]", lambertian_1.roughness);
+        s.setFloat("material_fuzz[0]", lambertian_1.fuzz);
+        s.setFloat("material_ior[0]", lambertian_1.ior);
 
-        s.setVec3("material_albedo[1]", metal.albedo);
-        s.setFloat("material_roughness[1]", metal.roughness);
-        s.setFloat("material_fuzz[1]", metal.fuzz);
-        s.setFloat("material_ior[1]", metal.ior);
+        s.setVec3("material_albedo[1]", metal_2.albedo);
+        s.setFloat("material_roughness[1]", metal_2.roughness);
+        s.setFloat("material_fuzz[1]", metal_2.fuzz);
+        s.setFloat("material_ior[1]", metal_2.ior);
 
         s.setInt("material_type[0]", METAL);
         s.setInt("material_type[1]", LAMBERTIAN);
+        */
 
-        // sphere values
-        s.setVec3("sphere[0].center", sphere0.center);
-        s.setFloat("sphere[0].radius", sphere0.radius);
-        s.setInt("sphere[0].material_index", 1);
-        s.setInt("sphere[0].material_type", METAL);
+        s.setMaterials(materials);
+        s.setSpheres(world);
 
-        s.setVec3("sphere[1].center", sphere1.center);
-        s.setFloat("sphere[1].radius", sphere1.radius);
-        s.setInt("sphere[1].material_index", 0);
-        s.setInt("sphere[1].material_type", LAMBERTIAN);
+        // Sphere values
+        /*
+        s.setVec3("Sphere[0].center", sphere0.center);
+        s.setFloat("Sphere[0].radius", sphere0.radius);
+        s.setInt("Sphere[0].material_index", 1);
+        s.setInt("Sphere[0].material_type", METAL);
+
+        s.setVec3("Sphere[1].center", sphere1.center);
+        s.setFloat("Sphere[1].radius", sphere1.radius);
+        s.setInt("Sphere[1].material_index", 0);
+        s.setInt("Sphere[1].material_type", LAMBERTIAN);
+        */
 
         // bind texture to texture unit 0
         glActiveTexture(GL_TEXTURE0);

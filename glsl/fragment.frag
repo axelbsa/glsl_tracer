@@ -6,7 +6,7 @@
 #define PHI 1.61803398874989484820459
 #define PI 3.1415926535897932385
 #define TAU 2. * PI
-#define MAX_SPEHERS 256
+#define MAX_SPEHERS 128
 
 // Material types as mapped on the cpu
 #define LAMBERTIAN 0
@@ -24,7 +24,6 @@ struct Sphere {
     vec3 center;
     float radius;
     int material_index;
-    int material_type;
 };
 
 struct Ray {
@@ -64,6 +63,49 @@ in vec4 gl_FragCoord;
 layout(location = 0) out vec4 FragColor;
 
 float g_seed = 0.25;
+
+vec3 linearToSRGB(vec3 color) {
+    bvec3 cutoff = lessThan(color, vec3(0.0031308));
+    vec3 higher = vec3(1.055) * pow(color, vec3(1.0/2.4)) - vec3(0.055);
+    vec3 lower = color * vec3(12.92);
+    return mix(higher, lower, cutoff);
+}
+
+vec3 reinhard(vec3 x) {
+    return x / (1.0 + x);
+}
+
+vec3 aces(vec3 x) {
+    const float a = 2.51;
+    const float b = 0.03;
+    const float c = 2.43;
+    const float d = 0.59;
+    const float e = 0.14;
+    return clamp((x * (a * x + b)) / (x * (c * x + d) + e), 0.0, 1.0);
+}
+
+vec3 filmic(vec3 x) {
+    vec3 X = max(vec3(0.0), x - 0.004);
+    vec3 result = (X * (6.2 * X + 0.5)) / (X * (6.2 * X + 1.7) + 0.06);
+    return pow(result, vec3(2.2));
+}
+
+vec3 lottes(vec3 x) {
+    const vec3 a = vec3(1.6);
+    const vec3 d = vec3(0.977);
+    const vec3 hdrMax = vec3(8.0);
+    const vec3 midIn = vec3(0.18);
+    const vec3 midOut = vec3(0.267);
+
+    const vec3 b =
+    (-pow(midIn, a) + pow(hdrMax, a) * midOut) /
+    ((pow(hdrMax, a * d) - pow(midIn, a * d)) * midOut);
+    const vec3 c =
+    (pow(hdrMax, a * d) * pow(midIn, a) - pow(hdrMax, a) * pow(midIn, a * d) * midOut) /
+    ((pow(hdrMax, a * d) - pow(midIn, a * d)) * midOut);
+
+    return pow(x, a) / (pow(x, a * d) * b + c);
+}
 
 float random(vec2 st)
 {
@@ -157,7 +199,7 @@ bool lambertian_material(Ray r, inout hit_record rec, inout vec3 attenuation, in
 bool metal_material(Ray r, inout hit_record rec, inout vec3 attenuation, inout Ray scattered, inout uint state)
 {
     vec3 reflected = reflect( normalize(direction(r)), rec.normal );
-    scattered = Ray(rec.p, reflected);
+    scattered = Ray(rec.p, reflected + material_fuzz[rec.material_index]*random_in_unit_sphere2(state));
     attenuation = material_albedo[rec.material_index];  // Some color, this will need to be parametracized
     return ( dot( direction(scattered), rec.normal ) > 0 );
 }
@@ -225,29 +267,18 @@ vec3 color(Ray r, inout uint state, inout vec2 state2)
         vec3 attenuation;
         if ( hittable_list_hit(cur_ray, 0.001f, MAX_FLOAT, rec) )
         {
-            if (rec.material_index == 0)
+            if (material_type[rec.material_index] == LAMBERTIAN)
             {
-                // bool lambertian_material(Ray r, inout hit_record rec, inout vec3 attenuation, inout Ray scattered, inout uint state)
                 lambertian_material(r, rec, attenuation, cur_ray, state);
                 cur_attenuation *= attenuation;
 
             }
-            else if (rec.material_index == 1)
+            else if (material_type[rec.material_index] == METAL)
             {
                 metal_material(r, rec, attenuation, cur_ray, state);
                 cur_attenuation *= attenuation;
 
             }
-/**
-            if (rec.mat_prt->scatter(r, rec, attenuation, cur_ray, local_rand_state))
-            {
-                cur_attenuation *= attenuation;
-            }
-            vec3 target = rec.p + rec.normal + random_in_unit_sphere2(state);
-            //vec3 direction = random_on_hemisphere(rec.normal, state);
-            cur_attenuation *= 0.5f;
-            cur_ray = Ray(rec.p, target-rec.p);
-*/
         }
         else
         {
@@ -271,7 +302,7 @@ void main() {
 
     vec3 col = vec3(1.0f);
 
-#define ns 10
+#define ns 300
     for (int i = 0; i < ns; i++)
     {
         float u = float(gl_FragCoord.x + RandomValue(pixelIndex)) / float(props.x);
@@ -280,6 +311,7 @@ void main() {
         Ray r = get_ray(cam, u, v);
         col += color(r, pixelIndex, st);
     }
+
     // Gamma2 as rt1w
     //col = col / ns;
     //col  = sqrt(col);
@@ -294,6 +326,17 @@ void main() {
     //FragColor = vec4(col / float(ns), 1.0f);  // This is only color div by number of samples
     //FragColor = texture(tex, ftexcoord);
     col = col / ns;
-    //col = vec3(sqrt(col.x), sqrt(col.y), sqrt(col.z));
+    //col = lottes(col);
+
+/**
+    vec3 exposed = col * 0.8; // Try values like 0.1 to 0.5
+    vec3 toneMapped = exposed / (exposed + vec3(1.0));
+    vec3 final = linearToSRGB(toneMapped);
+*/
+
+    //col = linearToSRGB(col);
+    col = pow(col, vec3(1.0/1.6)); // Lower the gamma some, i like the better even if it's wrong
+
+    //FragColor = vec4(aces(col), 1.0f) * .999f;
     FragColor = vec4(col, 1.0f) * .999;
 }
