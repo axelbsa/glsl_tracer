@@ -24,7 +24,7 @@
 
 #include "material.h"
 #include "glm/glm.hpp"
-#include "Sphere.h"
+#include "sphere.h"
 
 
 class Shader

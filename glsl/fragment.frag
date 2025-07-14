@@ -190,8 +190,8 @@ vec3 random_on_hemisphere(vec3 normal, inout uint state) {
 bool _refract(inout vec3 v, inout vec3 n, float ni_over_nt, inout vec3 refracted)
 {
 
-    refracted = _refract(v, n, ni_over_nt);
-    return vec3(1.0f);
+    refracted = refract(v, n, ni_over_nt);
+    return true;
 }
 
 bool lambertian_material(Ray r, inout hit_record rec, inout vec3 attenuation, inout Ray scattered, inout uint state)

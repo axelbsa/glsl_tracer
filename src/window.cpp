@@ -22,7 +22,13 @@ static void framebuffer_size_callback(GLFWwindow* window, int width, int height)
     // Update your stored framebuffer dimensions
 }
 
+static void ErrorCallback(int, const char* err_str)
+{
+    std::cerr << "GLFW Error: " << err_str << std::endl;
+}
+
 uint32_t window::init() {
+    glfwSetErrorCallback(ErrorCallback);
     if(glfwInit() == GL_FALSE) {
         std::cerr << "failed to init GLFW" << std::endl;
         return 1;
@@ -47,7 +53,8 @@ uint32_t window::create() {
         fprintf(stderr, "Failed to initialize GLAD");
         return -1;
     }
-#else
+#endif
+
     int fbWidth, fbHeight;
     glfwGetFramebufferSize(w, &fbWidth, &fbHeight);
 
@@ -57,7 +64,6 @@ uint32_t window::create() {
 
     // Set viewport to framebuffer size
     glViewport(0, 0, fbWidth, fbHeight);
-#endif
 
     return 0;
 }

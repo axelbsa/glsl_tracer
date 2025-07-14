@@ -13,7 +13,7 @@
 #include <vector>
 #include "window.h"
 #include "shader.h"
-#include "Sphere.h"
+#include "sphere.h"
 #include "material.h"
 
 //void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
