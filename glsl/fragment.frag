@@ -54,7 +54,6 @@ uniform float material_ior[MAX_MATERIALS];
 
 // The idea is to have this array of int's be a lookup table for if the material type is lambertian, metal, etc
 // ex: material_type = [2,0,1,2,3,1,0, ...] that way we don't need the material_type in the sphere struct
-// But for right now i feel it's better to ignore this "optimization" and just keep it in the sphere struct
 uniform int material_type[MAX_MATERIALS]; // 0=lambertian, 1=metal, 2=dielectric
 
 in vec2 ftexcoord;
@@ -188,6 +187,13 @@ vec3 random_on_hemisphere(vec3 normal, inout uint state) {
         //return -on_unit_sphere;
 }
 
+bool _refract(inout vec3 v, inout vec3 n, float ni_over_nt, inout vec3 refracted)
+{
+
+    refracted = _refract(v, n, ni_over_nt);
+    return vec3(1.0f);
+}
+
 bool lambertian_material(Ray r, inout hit_record rec, inout vec3 attenuation, inout Ray scattered, inout uint state)
 {
     vec3 target = rec.p + rec.normal + random_in_unit_sphere2(state);
@@ -202,6 +208,40 @@ bool metal_material(Ray r, inout hit_record rec, inout vec3 attenuation, inout R
     scattered = Ray(rec.p, reflected + material_fuzz[rec.material_index]*random_in_unit_sphere2(state));
     attenuation = material_albedo[rec.material_index];  // Some color, this will need to be parametracized
     return ( dot( direction(scattered), rec.normal ) > 0 );
+}
+
+bool dielectric(Ray r, inout hit_record rec, inout vec3 attenuation, inout Ray scattered, inout uint state)
+{
+    vec3 outward_normal;
+    vec3 refracted;
+    float ni_over_nt;
+    float ref_idx;
+
+    vec3 reflected = reflect( direction(r), rec.normal );
+    attenuation = vec3(1.0f, 1.0f, 0.0f);
+
+    if (dot(direction(r), rec.normal) > 0)
+    {
+        outward_normal = -rec.normal;
+        ni_over_nt = ref_idx;
+    }
+    else
+    {
+        outward_normal = rec.normal;
+        ni_over_nt = 1.0f / ref_idx;
+    }
+
+    refracted = refract(direction(r), outward_normal, ni_over_nt);
+    if (dot(refracted, refracted) > 0.0) // dot(V,V) returns 0 if V is 0 and > if V is something else
+    {
+        scattered = Ray(rec.p, refracted);
+    }
+    else
+    {
+        scattered = Ray(rec.p, reflected);
+        return false;
+    }
+    return true;
 }
 
 bool hit_sphere(Ray r, float t_min, float t_max, int object_index, inout hit_record rec)
@@ -279,6 +319,9 @@ vec3 color(Ray r, inout uint state, inout vec2 state2)
                 cur_attenuation *= attenuation;
 
             }
+            if (material_type[rec.material_index] == DIELECTRIC)
+            {
+            }
         }
         else
         {
@@ -302,7 +345,7 @@ void main() {
 
     vec3 col = vec3(1.0f);
 
-#define ns 300
+#define ns 9
     for (int i = 0; i < ns; i++)
     {
         float u = float(gl_FragCoord.x + RandomValue(pixelIndex)) / float(props.x);

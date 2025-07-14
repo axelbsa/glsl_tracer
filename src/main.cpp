@@ -31,7 +31,7 @@ struct ray_cam {
 };
 
 int main() {
-    window w(1280, 720);
+    window w(1280, 800);
     w.init();
     w.setWindowHints(GLFW_CONTEXT_VERSION_MAJOR, 4);
     w.setWindowHints(GLFW_CONTEXT_VERSION_MINOR, 1);
@@ -47,7 +47,13 @@ int main() {
 
     //=====================================================================================
     // Move this to the Camera class
-    const float aspect_ratio = 16.0f / 9.0f;
+    //const float aspect_ratio = 16.0f / 9.0f;
+    //const float aspect_ratio = 1.539714867617108;
+    //const float aspect_ratio = 1.6;
+    float aspect_ratio = (float)w.width / (float)w.height;
+    std::cout << "Width = " << w.width << " Heigth = " << w.height << std::endl;
+    std::cout << "Frmaebuffer width = " << w.framebuffer_width << " heigth = " << w.framebuffer_height << std::endl;
+    std::cout << "Aspect ratio is = " << aspect_ratio << std::endl;
     int image_width;
     int image_height;
 
@@ -55,8 +61,13 @@ int main() {
     float viewport_width = aspect_ratio * viewport_height;
     float focal_length = 1.0f;
 
-    image_width = w.width;
+    //image_width = w.width;
+
+    image_width = w.framebuffer_width;   // Use framebuffer for actual pixel count
     image_height = static_cast<int>(image_width / aspect_ratio);
+
+    //image_height = w.framebuffer_height;
+
 
     // Default camera
     glm::vec3 origin = glm::vec3 (0.0f, 0.0f, 0.0f);
@@ -249,7 +260,8 @@ int main() {
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, texture);
 
-        s.setVec2("props", glm::vec2(w.width, w.height));
+        //s.setVec2("props", glm::vec2(w.width, w.height));
+        s.setVec2("props", glm::vec2(w.framebuffer_width, w.framebuffer_height));
 
         // bind the vao
         glBindVertexArray(vao);

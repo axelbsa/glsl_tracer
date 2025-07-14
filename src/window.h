@@ -22,6 +22,8 @@ public:
     uint32_t setWindowHints(uint32_t A, uint32_t B);
 
     GLFWwindow *getGLFWWindow();
+    int framebuffer_width;
+    int framebuffer_height;
 
 private:
     GLFWwindow *w;

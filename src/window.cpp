@@ -17,6 +17,11 @@
 
 #include "window.h"
 
+static void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
+    glViewport(0, 0, width, height);
+    // Update your stored framebuffer dimensions
+}
+
 uint32_t window::init() {
     if(glfwInit() == GL_FALSE) {
         std::cerr << "failed to init GLFW" << std::endl;
@@ -34,12 +39,24 @@ uint32_t window::create() {
     glfwMakeContextCurrent(w);
     glfwSwapInterval( 0 );
 
+    glfwSetFramebufferSizeCallback(w, framebuffer_size_callback);
+
 #ifndef __APPLE__
     if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
     {
         fprintf(stderr, "Failed to initialize GLAD");
         return -1;
     }
+#else
+    int fbWidth, fbHeight;
+    glfwGetFramebufferSize(w, &fbWidth, &fbHeight);
+
+    // Update your class members or store these values
+    framebuffer_width = fbWidth;
+    framebuffer_height = fbHeight;
+
+    // Set viewport to framebuffer size
+    glViewport(0, 0, fbWidth, fbHeight);
 #endif
 
     return 0;
