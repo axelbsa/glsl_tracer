@@ -88,15 +88,16 @@ int main() {
 
     Material metal_2 = Material::metal(glm::vec3(0.8f, 0.6f, 0.2f), 0.1f);
     Material metal_3 = Material::metal(glm::vec3(0.8f, 0.8f, 0.8f), 1.0f);
-    Material dielectric_4 = Material::dielectric(1.52);
+    Material dielectric_4 = Material::dielectric(1.5);
+    Material dielectric_5 = Material::dielectric(1.5);
 
-    Sphere sphere0{glm::vec3(0,-0.0f,-1), 0.5, 0};
+    Sphere sphere0{glm::vec3(0,-0.0f,-1.2), 0.5, 0};
     Sphere sphere1{glm::vec3(0,-100.5,-1), 100, 1};
 
     Sphere sphere2{glm::vec3(1,-0.0f,-1), 0.5, 2};
 
     Sphere sphere3{glm::vec3(-1,-0.0f,-1), 0.5, 4};
-    Sphere sphere4{glm::vec3(-1,-0.0f,-1), -0.45, 4};
+    Sphere sphere4{glm::vec3(-1,-0.0f,-1), -0.4, 5};
 
     std::vector<Sphere> world = {
         sphere0,
@@ -112,6 +113,7 @@ int main() {
         metal_2,
         metal_3,
         dielectric_4,
+        dielectric_5,
     };
 
     //Sphere sphere0{glm::vec3(0,-0.0f,-1), 0.5};
