@@ -43,6 +43,7 @@ uniform float time;
 uniform sampler2D tex; // texture uniform
 uniform vec2 props;
 uniform int NUM_SPHERES;
+uniform int frame_number;
 uniform Camera cam;
 uniform Sphere sphere[MAX_SPEHERS];
 
@@ -120,6 +121,18 @@ float random_golden (vec2 st) {
     return fract(tan(distance(st*PHI, st)*g_seed)*st.x);
 }
 
+float random_float(inout uint state) {
+    state = state * 1664525u + 1013904223u;  // LCG constants
+    return float(state) * (1.0 / 4294967296.0);  // Convert to [0,1)
+}
+
+float random_float2(inout uint state) {
+    state ^= (state << 13u);
+    state ^= (state >> 17u);
+    state ^= (state << 5u);
+    return float(state) * (1.0 / 4294967296.0);
+}
+
 float RandomValue(inout uint state)
 {
     state = state * 747796405 + 2891336453;
@@ -187,11 +200,11 @@ vec3 random_on_hemisphere(vec3 normal, inout uint state) {
         //return -on_unit_sphere;
 }
 
-bool _refract(inout vec3 v, inout vec3 n, float ni_over_nt, inout vec3 refracted)
+float schlick(float cosine, float ref_idx)
 {
-
-    refracted = refract(v, n, ni_over_nt);
-    return true;
+    float r0 = (1 - ref_idx) / (1 + ref_idx);
+    r0 = r0 * r0;
+    return r0 + (1 - r0) * pow((1 - cosine), 5);
 }
 
 bool lambertian_material(Ray r, inout hit_record rec, inout vec3 attenuation, inout Ray scattered, inout uint state)
@@ -210,39 +223,156 @@ bool metal_material(Ray r, inout hit_record rec, inout vec3 attenuation, inout R
     return ( dot( direction(scattered), rec.normal ) > 0 );
 }
 
-bool dielectric(Ray r, inout hit_record rec, inout vec3 attenuation, inout Ray scattered, inout uint state)
+bool _refract(vec3 v, vec3 n, float ni_over_nt, inout vec3 refracted)
+{
+    vec3 uv = normalize(v);
+    float dt = dot(uv, n);
+    float discriminant = 1.0 - ni_over_nt*ni_over_nt*(1-dt*dt);
+    if (discriminant > 0) {
+        refracted = ni_over_nt * (uv - n*dt) - n*sqrt(discriminant);
+        return true;
+    }
+    return false;
+}
+
+bool dielectric_simple(Ray r, inout hit_record rec, inout vec3 attenuation, inout Ray scattered, inout uint state)
 {
     vec3 outward_normal;
-    vec3 refracted;
-    float ni_over_nt;
-    float ref_idx;
-
     vec3 reflected = reflect( direction(r), rec.normal );
-    attenuation = vec3(1.0f, 1.0f, 0.0f);
+    float ni_over_nt;
+    attenuation = vec3(1.0f, 1.0f, 1.0f);
+    vec3 refracted = vec3(0.0f, 0.0f, 0.0f);
+    float ref_idx = material_ior[rec.material_index];
 
-    if (dot(direction(r), rec.normal) > 0)
-    {
+
+    if (dot(direction(r), rec.normal) > 0) {
         outward_normal = -rec.normal;
         ni_over_nt = ref_idx;
-    }
-    else
-    {
+    } else {
         outward_normal = rec.normal;
         ni_over_nt = 1.0f / ref_idx;
     }
 
-    refracted = refract(direction(r), outward_normal, ni_over_nt);
-    if (dot(refracted, refracted) > 0.0) // dot(V,V) returns 0 if V is 0 and > if V is something else
-    {
+    if (_refract(direction(r), outward_normal, ni_over_nt, refracted)) {
         scattered = Ray(rec.p, refracted);
-    }
-    else
-    {
+    } else {
         scattered = Ray(rec.p, reflected);
-        return false;
+        //attenuation = vec3(1.0, 0.8, 0.8);
+        //return false;
     }
     return true;
+
 }
+
+
+bool dielectric(Ray r, inout hit_record rec, inout vec3 attenuation, inout Ray scattered, inout uint state)
+{
+    vec3 outward_normal;
+    vec3 reflected = reflect( direction(r), rec.normal );
+    float ni_over_nt;
+    attenuation = vec3(1.0f, 1.0f, 1.0f);
+    vec3 refracted;
+    float ref_idx = material_ior[rec.material_index];
+    float reflect_prob;
+    float cosine;
+
+    if (dot(direction(r), rec.normal) > 0.0f) {
+        outward_normal = -rec.normal;
+        ni_over_nt = ref_idx;
+        cosine = ref_idx * dot(direction(r), rec.normal) / length(direction(r));
+    } else {
+        outward_normal = rec.normal;
+        ni_over_nt = 1.0f / ref_idx;
+        cosine = -dot(direction(r), rec.normal) / length(direction(r));
+    }
+
+/**
+    refracted = refract(direction(r), outward_normal, ni_over_nt);
+    if (dot(refracted, refracted) > 0.0) { // dot(V,V) returns 0 if V is 0 and > if V is something else
+        reflect_prob = schlick(cosine, ref_idx);
+    } else {
+        reflect_prob = 1.0f;
+    }
+*/
+
+    if (_refract(direction(r), outward_normal, ni_over_nt, refracted)) {
+        reflect_prob = schlick(cosine, ref_idx);
+    } else {
+        reflect_prob = 1.0f;
+    }
+
+    if (random_float(state) < reflect_prob) {
+        //attenuation = vec3(1.0f, 0.8f, 0.8f);
+        scattered = Ray(rec.p, reflected);
+    } else {
+        //attenuation = vec3(1.0f, 1.f, 1.0f);
+        scattered = Ray(rec.p, refracted);
+    }
+    //scattered = Ray(rec.p, refracted);
+
+    return true;
+
+/**
+    if (!can_refract) {
+        // Total internal reflection - MUST reflect
+        dir = reflect(unit_direction, outward_normal);
+    } else {
+        // Refraction is possible - use Fresnel to decide
+        float reflect_prob = schlick(cos_theta, ni_over_nt);
+        if (random_float2(state) < reflect_prob) {
+            dir = reflect(unit_direction, outward_normal);
+        } else {
+            dir = refract(unit_direction, outward_normal, ni_over_nt);
+        }
+    }
+    scattered = Ray(rec.p, dir);
+
+    if (!can_refract){
+        scattered = Ray(rec.p, reflected);
+    } else {
+        if (random_float(state) < reflect_prob) {
+            scattered = Ray(rec.p, reflected);
+        } else {
+            scattered = Ray(rec.p, refracted);
+        }
+    }
+*/
+
+}
+
+/**
+bool scatter(Ray r_in, hit_record rec, out vec3 attenuation, out Ray scattered, inout uint state) {
+    attenuation = vec3(1.0, 1.0, 1.0); // Glass doesn't absorb light
+    float ref_idx = material_ior[rec.material_index];
+
+    // Front face is not yet implemented in rec, it's the other implementation that has the normal
+    // in hit_record
+    float ni_over_nt = rec.front_face ? (1.0 / ref_idx) : ref_idx;
+
+    vec3 unit_direction = normalize(direction(r_in));
+    float cos_theta = min(dot(-unit_direction, rec.normal), 1.0);
+    float sin_theta = sqrt(1.0 - cos_theta * cos_theta);
+
+    // Total internal reflection check
+    if (ni_over_nt * sin_theta > 1.0) {
+        vec3 reflected = reflect(unit_direction, rec.normal);
+        scattered = Ray(rec.p, reflected);
+        return true;
+    }
+
+    // Fresnel reflectance
+    float reflect_prob = schlick(cos_theta, ni_over_nt);
+    if (random_float(state) < reflect_prob) {
+        vec3 reflected = reflect(unit_direction, rec.normal);
+        scattered = Ray(rec.p, reflected);
+    } else {
+        vec3 refracted = refract(unit_direction, rec.normal, ni_over_nt);
+        scattered = Ray(rec.p, refracted);
+    }
+
+    return true;
+}
+*/
 
 bool hit_sphere(Ray r, float t_min, float t_max, int object_index, inout hit_record rec)
 {
@@ -304,24 +434,40 @@ vec3 color(Ray r, inout uint state, inout vec2 state2)
     for(int i = 0; i < 50; i++)
     {
         hit_record rec;
-        vec3 attenuation;
         if ( hittable_list_hit(cur_ray, 0.001f, MAX_FLOAT, rec) )
         {
+            Ray scattered;
+            vec3 attenuation = vec3(0.0f);
             if (material_type[rec.material_index] == LAMBERTIAN)
             {
-                lambertian_material(r, rec, attenuation, cur_ray, state);
-                cur_attenuation *= attenuation;
+                if(lambertian_material(cur_ray, rec, attenuation, scattered, state)) {
+                    cur_attenuation *= attenuation;
+                    cur_ray = scattered;
+                }else {
+                    return vec3(0.0,0.0,0.0);
+                }
 
             }
             else if (material_type[rec.material_index] == METAL)
             {
-                metal_material(r, rec, attenuation, cur_ray, state);
-                cur_attenuation *= attenuation;
+                if (metal_material(cur_ray, rec, attenuation, scattered, state)) {
+                    cur_attenuation *= attenuation;
+                    cur_ray = scattered;
+                }else{
+                    return vec3(0.0,0.0,0.0);
+                }
 
             }
-            if (material_type[rec.material_index] == DIELECTRIC)
+            else if (material_type[rec.material_index] == DIELECTRIC)
             {
+                if (dielectric(cur_ray, rec, attenuation, scattered, state)) {
+                    cur_attenuation *= attenuation;
+                    cur_ray = scattered;
+                }else{
+                    return vec3(0.0,0.0,0.0);
+                }
             }
+
         }
         else
         {
@@ -331,12 +477,14 @@ vec3 color(Ray r, inout uint state, inout vec2 state2)
             return cur_attenuation * c;
         }
     }
-    return vec3(0.0,0.0,0.0);
+    return vec3(0.0f, 0.0f, 0.0f);
 }
 
 void main() {
     vec2 st = gl_FragCoord.xy/props.xy;
     uint pixelIndex = int(gl_FragCoord.y * props.x + gl_FragCoord.x);
+    uint state = uint(gl_FragCoord.x) * 1973u + uint(gl_FragCoord.y) * 9277u; // + uint(frame_number) * 26699u;
+    state += frame_number * 26699;
 
     g_seed = random(gl_FragCoord.xy * (mod(time, 100.)));
     if(isnan(g_seed)){
@@ -345,14 +493,15 @@ void main() {
 
     vec3 col = vec3(1.0f);
 
-#define ns 9
+#define ns 300
     for (int i = 0; i < ns; i++)
     {
         float u = float(gl_FragCoord.x + RandomValue(pixelIndex)) / float(props.x);
         float v = float(gl_FragCoord.y + RandomValue(pixelIndex)) / float(props.y);
 
         Ray r = get_ray(cam, u, v);
-        col += color(r, pixelIndex, st);
+        //col += color(r, pixelIndex, st);
+        col += color(r, state, st);
     }
 
     // Gamma2 as rt1w

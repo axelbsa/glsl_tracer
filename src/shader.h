@@ -21,6 +21,7 @@
 #include <ostream>
 #define GLFW_INCLUDE_GLCOREARB
 #include <GLFW/glfw3.h>
+#include <GL/gl.h>
 
 #include "material.h"
 #include "glm/glm.hpp"
@@ -170,6 +171,11 @@ public:
     }
 
     void setInt(const std::string &name, int value) const
+    {
+        glUniform1i(glGetUniformLocation(ID, name.c_str()), value);
+    }
+
+    void setUInt(const std::string &name, unsigned int value) const
     {
         glUniform1i(glGetUniformLocation(ID, name.c_str()), value);
     }

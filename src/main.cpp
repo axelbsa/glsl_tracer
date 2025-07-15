@@ -88,18 +88,22 @@ int main() {
 
     Material metal_2 = Material::metal(glm::vec3(0.8f, 0.6f, 0.2f), 0.1f);
     Material metal_3 = Material::metal(glm::vec3(0.8f, 0.8f, 0.8f), 1.0f);
+    Material dielectric_4 = Material::dielectric(1.52);
 
     Sphere sphere0{glm::vec3(0,-0.0f,-1), 0.5, 0};
     Sphere sphere1{glm::vec3(0,-100.5,-1), 100, 1};
 
     Sphere sphere2{glm::vec3(1,-0.0f,-1), 0.5, 2};
-    Sphere sphere3{glm::vec3(-1,-0.0f,-1), 0.5, 3};
+
+    Sphere sphere3{glm::vec3(-1,-0.0f,-1), 0.5, 4};
+    Sphere sphere4{glm::vec3(-1,-0.0f,-1), -0.45, 4};
 
     std::vector<Sphere> world = {
         sphere0,
         sphere1,
         sphere2,
         sphere3,
+        sphere4,
     };
 
     std::vector<Material> materials = {
@@ -107,6 +111,7 @@ int main() {
         lambertian_1,
         metal_2,
         metal_3,
+        dielectric_4,
     };
 
     //Sphere sphere0{glm::vec3(0,-0.0f,-1), 0.5};
@@ -202,14 +207,14 @@ int main() {
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, w.width, w.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, &image[0]);
 
     double previousTime = glfwGetTime();
-    int frameCount = 0;
+    int frameCount = 1;
 
     while(!glfwWindowShouldClose(w.getGLFWWindow())) {
         glfwPollEvents();
         double currentTime = glfwGetTime();
 
         // clear first
-        //glClear(GL_COLOR_BUFFER_BIT);
+        // glClear(GL_COLOR_BUFFER_BIT);
 
         // use the shader program
         s.use();
@@ -217,6 +222,8 @@ int main() {
         // All of the Sphere setting is moved to shader class look there.
         //s.setInt("NUM_SPHERES", 2);
         s.setFloat("time", currentTime);
+        //s.setInt("frame_number", frameCount);
+        s.setInt("frame_number", 1);
 
         // Camera Values
         s.setVec3("cam.lower_left_corner", r.lower_left_corner);
@@ -272,7 +279,7 @@ int main() {
         // check for errors
         GLenum error = glGetError();
         if(error != GL_NO_ERROR) {
-            std::cerr << error << std::endl;
+            std::cerr << error <<  std::endl;
             break;
         }
 
@@ -282,7 +289,7 @@ int main() {
         if ( delta >= 1.0 )
         {
             char title [256] = {"\0"};
-            snprintf ( title, 255,"%s - [FPS: %3.4f]", "texture", (float)frameCount / delta );
+            snprintf ( title, 255,"%s - [FPS: %3.4f]", "GLSL RTIW", (float)frameCount / delta );
             glfwSetWindowTitle (w.getGLFWWindow(), title);
 
             frameCount = 0;
