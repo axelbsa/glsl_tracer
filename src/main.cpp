@@ -15,6 +15,7 @@
 #include "shader.h"
 #include "sphere.h"
 #include "material.h"
+#include "camera2.h"
 
 //void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
 //{
@@ -47,41 +48,14 @@ int main() {
 
     //=====================================================================================
     // Move this to the Camera class
-    //const float aspect_ratio = 16.0f / 9.0f;
-    //const float aspect_ratio = 1.539714867617108;
-    //const float aspect_ratio = 1.6;
-    float aspect_ratio = (float)w.width / (float)w.height;
-    std::cout << "Width = " << w.width << " Heigth = " << w.height << std::endl;
-    std::cout << "Frmaebuffer width = " << w.framebuffer_width << " heigth = " << w.framebuffer_height << std::endl;
-    std::cout << "Aspect ratio is = " << aspect_ratio << std::endl;
-    int image_width;
-    int image_height;
-
-    float viewport_height = 2.0f;
-    float viewport_width = aspect_ratio * viewport_height;
-    float focal_length = 1.0f;
-
-    //image_width = w.width;
-
-    image_width = w.framebuffer_width;   // Use framebuffer for actual pixel count
-    image_height = static_cast<int>(image_width / aspect_ratio);
-
-    //image_height = w.framebuffer_height;
-
-
-    // Default camera
-    glm::vec3 origin = glm::vec3 (0.0f, 0.0f, 0.0f);
-    glm::vec3 horizontal = glm::vec3(viewport_width, 0.0f, 0.0f);
-    glm::vec3 vertical = glm::vec3(0.0f, viewport_height, 0.0f);
-    //lower_left_corner = make_float3(-2.0f, -1.0f, -1.0f);
-    glm::vec3 lower_left_corner = origin - horizontal/2.0f - vertical/2.0f - glm::vec3(0.0f, 0.0f, focal_length);
-
+    Camera cam(90, (float)w.width / (float)w.height, &w);
     ray_cam r{
-            lower_left_corner,
-            horizontal,
-            vertical,
-            origin
+            cam.lower_left_corner,
+            cam.horizontal,
+            cam.vertical,
+            cam.origin
     };
+
     //=======================================================================================
     Material lambertian_0 = Material::lambertian(glm::vec3(0.8f, 0.3f, 0.3f));
     Material lambertian_1 = Material::lambertian(glm::vec3(0.8f, 0.8f, 0.0f));

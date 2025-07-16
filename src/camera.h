@@ -2,6 +2,10 @@
 // Created by Axel Sanner on 13/11/2023.
 //
 
+
+// This is a generic camera class
+// Delete this, might be usefull to borrow some parts for the glfw movement stuff later.
+//
 #ifndef MAIN_CAMERA_H
 #define MAIN_CAMERA_H
 
@@ -67,7 +71,7 @@ public:
     }
 
     // Returns the view matrix calculated using Euler Angles and the LookAt Matrix
-    glm::mat4 GetViewMatrix()
+    glm::mat4 GetViewMatrix() const
     {
         return glm::lookAt(Position, Position + Front, Up);
     }

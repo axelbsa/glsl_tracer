@@ -25,6 +25,7 @@ if(WIN32)
         src/shader.h
         src/camera.h
             src/sphere.h
+            src/camera2.h
     )
     set_target_properties(${PROJECT_NAME} PROPERTIES
             RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}
@@ -62,7 +63,8 @@ else()
             src/window.h
             src/shader.h
             src/camera.h
-            src/sphere.h)
+            src/sphere.h
+            src/camera2.h)
 
     set_target_properties(${PROJECT_NAME} PROPERTIES
             RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}

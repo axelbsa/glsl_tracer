@@ -145,7 +145,7 @@ public:
     }
 
     void setSpheres(const std::vector<Sphere>& spheres) const {
-        for (int i = 0; i < spheres.size(); ++i) {
+        for (size_t i = 0; i < spheres.size(); ++i) {
             std::string base = "sphere[" + std::to_string(i) + "]";
 
             setVec3(base + ".center", spheres[i].center);
