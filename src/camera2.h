@@ -15,40 +15,44 @@
 
 class Camera {
 public:
-    window *w;
-    const float aspect_ratio = 16.0f / 9.0f;
-    int image_width;
-    int image_height;
+    window *win;
 
-    float viewport_height = 2.0f;
-    float viewport_width = aspect_ratio * viewport_height;
-    float focal_length = 1.0f;
-
-    Camera (float vfov, float aspect, window *win)
+    Camera (glm::vec3 lookfrom, glm::vec3 lookat, glm::vec3 vup, float vfov, float aspect, float aparture, float focus_dist, window *win)
     {
-        w = win;
-
+        win = win;
+        look_at = lookat;
+        look_from = lookfrom;
+        lens_radius = aparture / 2;
         float theta = vfov * M_PI / 180;
         float half_height = tan(theta / 2);
         float half_width = aspect * half_height;
 
-        image_width = w->width;
-        image_height = static_cast<int>(image_width / aspect_ratio);
+        origin = lookfrom;
 
-        //lower_left_corner = origin - horizontal/2.0f - vertical/2.0f - glm::vec3(0.0f, 0.0f, focal_length);
-        //horizontal = glm::vec3(viewport_width, 0.0f, 0.0f);
-        //vertical = glm::vec3(0.0f, viewport_height, 0.0f);
+        w = glm::normalize(lookfrom - lookat);
+        u = glm::normalize(glm::cross(vup, w));
+        v = glm::cross(w, u);
 
-        lower_left_corner = glm::vec3(-half_width, -half_height, -1.0f);
-        horizontal = glm::vec3(2 * half_width, 0.0f, 0.0f);
-        vertical = glm::vec3(0.0f, 2 * half_height, 0.0f);
-        origin = glm::vec3 (0.0f, 0.0f, 0.0f);
+//        lower_left_corner = origin - horizontal/2.0f - vertical/2.0f - glm::vec3(0.0f, 0.0f, focal_length);
+//        horizontal = glm::vec3(viewport_width, 0.0f, 0.0f);
+//        vertical = glm::vec3(0.0f, viewport_height, 0.0f);
+
+        // lower_left_corner = glm::vec3(-half_width, -half_height, -1.0f);
+        lower_left_corner = origin - half_width * focus_dist * u - half_height * focus_dist * v - focus_dist * w;
+        horizontal = 2 * half_width * focus_dist * u;
+        vertical = 2 * half_height * focus_dist * v;
     }
 
     glm::vec3 origin;
     glm::vec3 horizontal;
     glm::vec3 vertical;
     glm::vec3 lower_left_corner;
+    glm::vec3 look_at;
+    glm::vec3 look_from;
+    glm::vec3 u;
+    glm::vec3 v;
+    glm::vec3 w;
+    float lens_radius;
 };
 
 #endif //MAIN_CAMERA2_H

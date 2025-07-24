@@ -1,12 +1,12 @@
 #version 410
 
-#define MAX_MATERIALS 32
+#define MAX_MATERIALS 144
 #define MAX_FLOAT 1e5
 #define FLT_MAX 3.402823466e+38
 #define PHI 1.61803398874989484820459
 #define PI 3.1415926535897932385
 #define TAU 2. * PI
-#define MAX_SPEHERS 128
+#define MAX_SPEHERS 144
 
 // Material types as mapped on the cpu
 #define LAMBERTIAN 0
@@ -18,6 +18,9 @@ struct Camera {
     vec3 horizontal;
     vec3 vertical;
     vec3 origin;
+    vec3 u;
+    vec3 v;
+    float lens_radius;
 };
 
 struct Sphere {
@@ -107,6 +110,10 @@ vec3 lottes(vec3 x) {
     return pow(x, a) / (pow(x, a * d) * b + c);
 }
 
+float squared_length(vec3 v) {
+    return v.x*v.x + v.y*v.y + v.z*v.z;
+}
+
 float random(vec2 st)
 {
     //https://stackoverflow.com/questions/53500550/generating-a-pseudo-random-number-between-0-an-1-glsl-es
@@ -141,28 +148,11 @@ float RandomValue(inout uint state)
     return result / 4294967295.0f;
 }
 
-vec3 origin(Ray r)
+float schlick(float cosine, float ref_idx)
 {
-    return r.A;
-}
-
-vec3 direction(Ray r)
-{
-    return r.B;
-}
-
-vec3 point_at_parameter(Ray r, float t)
-{
-    return r.A + t*r.B;
-}
-
-Ray get_ray(Camera cam, float u, float v)
-{
-    return Ray(cam.origin, cam.lower_left_corner + u*cam.horizontal + v*cam.vertical - cam.origin);
-}
-
-float squared_length(vec3 v) {
-    return v.x*v.x + v.y*v.y + v.z*v.z;
+    float r0 = (1 - ref_idx) / (1 + ref_idx);
+    r0 = r0 * r0;
+    return r0 + (1 - r0) * pow((1 - cosine), 5);
 }
 
 vec3 random_in_unit_sphere(vec3 p)
@@ -173,6 +163,14 @@ vec3 random_in_unit_sphere(vec3 p)
         p = vec3(drand48(p.xy), drand48(p.zy), drand48(p.xz));
         n++;
     } while (squared_length(p) >= 1.0 && n < 3);
+    return p;
+}
+
+vec3 random_in_unit_disk(inout uint state) {
+    vec3 p;
+    do {
+        p = 2.0f * vec3(RandomValue(state), RandomValue(state), 0.0f) - vec3(1.0f, 1.0f, 1.0f);
+    } while (squared_length(p) >= 1.0);
     return p;
 }
 
@@ -195,16 +193,33 @@ vec3 random_on_hemisphere(vec3 normal, inout uint state) {
 
     // THIS IS WRONG, SOMEHOW
     //if (dot(on_unit_sphere, normal) > 0.0) // In the same hemisphere as the normal
-        //return on_unit_sphere;
+    //return on_unit_sphere;
     //else
-        //return -on_unit_sphere;
+    //return -on_unit_sphere;
 }
 
-float schlick(float cosine, float ref_idx)
+vec3 origin(Ray r)
 {
-    float r0 = (1 - ref_idx) / (1 + ref_idx);
-    r0 = r0 * r0;
-    return r0 + (1 - r0) * pow((1 - cosine), 5);
+    return r.A;
+}
+
+vec3 direction(Ray r)
+{
+    return r.B;
+}
+
+vec3 point_at_parameter(Ray r, float t)
+{
+    return r.A + t*r.B;
+}
+
+Ray get_ray(Camera cam, float s, float t, inout uint state)
+{
+    vec3 rd = cam.lens_radius * random_in_unit_sphere2(state);
+    vec3 offset = cam.u * rd.x + cam.v * rd.y;
+    return Ray(
+        cam.origin + offset,
+        cam.lower_left_corner + s * cam.horizontal + t * cam.vertical - cam.origin - offset);
 }
 
 bool lambertian_material(Ray r, inout hit_record rec, inout vec3 attenuation, inout Ray scattered, inout uint state)
@@ -483,7 +498,7 @@ vec3 color(Ray r, inout uint state, inout vec2 state2)
 void main() {
     vec2 st = gl_FragCoord.xy/props.xy;
     uint pixelIndex = int(gl_FragCoord.y * props.x + gl_FragCoord.x);
-    uint state = uint(gl_FragCoord.x) * 1973u + uint(gl_FragCoord.y) * 9277u; // + uint(frame_number) * 26699u;
+    uint state = uint(gl_FragCoord.x) * 1973u + uint(gl_FragCoord.y) * 9277u + uint(frame_number) * 26699u;
     state += frame_number * 26699;
 
     g_seed = random(gl_FragCoord.xy * (mod(time, 100.)));
@@ -491,15 +506,15 @@ void main() {
         g_seed = 0.25;
     }
 
-    vec3 col = vec3(1.0f);
+    vec3 col = vec3(0.0f);
 
-#define ns 300
+#define ns 1
     for (int i = 0; i < ns; i++)
     {
         float u = float(gl_FragCoord.x + RandomValue(pixelIndex)) / float(props.x);
         float v = float(gl_FragCoord.y + RandomValue(pixelIndex)) / float(props.y);
 
-        Ray r = get_ray(cam, u, v);
+        Ray r = get_ray(cam, u, v, state);
         //col += color(r, pixelIndex, st);
         col += color(r, state, st);
     }
