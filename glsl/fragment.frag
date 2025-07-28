@@ -511,8 +511,8 @@ void main() {
 #define ns 1
     for (int i = 0; i < ns; i++)
     {
-        float u = float(gl_FragCoord.x + RandomValue(pixelIndex)) / float(props.x);
-        float v = float(gl_FragCoord.y + RandomValue(pixelIndex)) / float(props.y);
+        float u = float(gl_FragCoord.x + RandomValue(state)) / float(props.x);
+        float v = float(gl_FragCoord.y + RandomValue(state)) / float(props.y);
 
         Ray r = get_ray(cam, u, v, state);
         //col += color(r, pixelIndex, st);

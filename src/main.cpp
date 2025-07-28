@@ -115,8 +115,9 @@ void debugCamera(Camera cam)
 }
 
 int main() {
-    //window w(1280, 720);
-    window w(1920, 1080);
+    window w(1280, 720);
+   // window w(1920, 1080);
+    //window w(4000, 4000);
     w.init();
     w.setWindowHints(GLFW_CONTEXT_VERSION_MAJOR, 4);
     w.setWindowHints(GLFW_CONTEXT_VERSION_MINOR, 1);
@@ -137,7 +138,7 @@ int main() {
     glm::vec3 lookat = glm::vec3(0.0f, 0.0f, 0.0f);
     glm::vec3 vup = glm::vec3(0.0f, 1.0f, 0.0f);
     float dist_to_focus = glm::length(lookfrom - lookat);
-    Camera cam(lookfrom, lookat, vup, 20, (float)w.framebuffer_width / (float)w.framebuffer_height, 0.1f, dist_to_focus, &w);
+    Camera cam(lookfrom, lookat, vup, 20, (float)w.framebuffer_width / (float)w.framebuffer_height, 0.0f, dist_to_focus, &w);
 
     std::vector<Sphere> world;
     std::vector<Material> materials;
@@ -294,8 +295,8 @@ int main() {
         lookfrom.x -= 0.01f;
         //lookfrom.y += 0.005f;
         //lookfrom.z -= 0.05f;
-        //Camera cam(lookfrom, lookat, vup, 20, (float)w.framebuffer_width / (float)w.framebuffer_height, 1/frameCount, dist_to_focus, &w);
-        //frameCount = 1;
+        Camera cam(lookfrom, lookat, vup, 20, (float)w.framebuffer_width / (float)w.framebuffer_height, 1/frameCount, dist_to_focus, &w);
+        frameCount = 1;
         //debugCamera(cam);
 
         // clear first
