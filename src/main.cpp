@@ -10,6 +10,8 @@
 #define GLFW_INCLUDE_GLCOREARB
 #include <GLFW/glfw3.h>
 //#include <gl/gl.h>
+#include "glm/glm.hpp"
+#include "glm/gtc/type_ptr.hpp"
 
 #include <iostream>
 #include <vector>
@@ -95,57 +97,9 @@ void createRandomWorld(std::vector<Sphere> &world, std::vector<Material> &materi
     world.push_back(s_big_metal);
 }
 
-void debugCamera(Camera cam)
+void createTestScene(std::vector<Sphere> &world, std::vector<Material> &materials)
 {
 
-    fprintf(
-            stderr,
-            "Camera has: lookFrom: [%f, %f, %f]\n",
-            cam.look_from.x,
-            cam.look_from.y,
-            cam.look_from.z
-    );
-    fprintf(
-            stderr,
-            "Camera has: lower_left: [%f, %f, %f]\n",
-            cam.lower_left_corner.x,
-            cam.lower_left_corner.y,
-            cam.lower_left_corner.z
-    );
-}
-
-int main() {
-    window w(1280, 720);
-   // window w(1920, 1080);
-    //window w(4000, 4000);
-    w.init();
-    w.setWindowHints(GLFW_CONTEXT_VERSION_MAJOR, 4);
-    w.setWindowHints(GLFW_CONTEXT_VERSION_MINOR, 1);
-    w.setWindowHints(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
-    w.setWindowHints(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-
-    srand (time(NULL));
-
-    //glfwSetErrorCallback(error_callback);
-    //glfwSetKeyCallback(window, key_callback);
-
-    w.create();
-
-    Shader s("glsl/vertex.vert", "glsl/fragment.frag");
-    Shader t("glsl/texture.vert", "glsl/texture.frag");
-
-    glm::vec3 lookfrom = glm::vec3(13.0f, 3.0f, 3.14f);
-    glm::vec3 lookat = glm::vec3(0.0f, 0.0f, 0.0f);
-    glm::vec3 vup = glm::vec3(0.0f, 1.0f, 0.0f);
-    float dist_to_focus = glm::length(lookfrom - lookat);
-    Camera cam(lookfrom, lookat, vup, 20, (float)w.framebuffer_width / (float)w.framebuffer_height, 0.0f, dist_to_focus, &w);
-
-    std::vector<Sphere> world;
-    std::vector<Material> materials;
-    createRandomWorld(world, materials);
-
-    // Material setup
-/*
     Material lambertian_0 = Material::lambertian(glm::vec3(0.1f, 0.2f, 0.5f));
     Material lambertian_1 = Material::lambertian(glm::vec3(0.8f, 0.8f, 0.0f));
 
@@ -169,42 +123,86 @@ int main() {
     float R = cos(M_PI/4);
     Sphere sphere5{glm::vec3(-R,0.0f,-1), R, 6};
     Sphere sphere6{glm::vec3( R,0.0f,-1), R, 7};
-*/
 
     // Add spheres to list
-/*
-    std::vector<Sphere> world = {
-        sphere0,
-        sphere1,
-        sphere2,
-        sphere3,
-        sphere4,
+    world = {
+            sphere0,
+            sphere1,
+            sphere2,
+            sphere3,
+            sphere4,
     };
 
     // Add materials to list
-    std::vector<Material> materials = {
-        lambertian_0,
-        lambertian_1,
-        metal_2,
-        metal_3,
-        dielectric_4,
-        dielectric_5,
-        lambertian_6,
-        lambertian_7,
+    materials = {
+            lambertian_0,
+            lambertian_1,
+            metal_2,
+            metal_3,
+            dielectric_4,
+            dielectric_5,
+            lambertian_6,
+            lambertian_7,
     };
-*/
 
-//    fprintf(stderr, "Sphere0: radius %f\n", sphere0.radius);
-//    fprintf(stderr, "Sphere1: radius %f\n", sphere1.radius);
-//
-//    fprintf(stderr, "Sphere0: position %f\n", sphere0.center.y);
-//    fprintf(stderr, "Sphere1: position %f\n", sphere1.center.y);
-//
-//    fprintf(stderr, "Sphere0: material %d\n", sphere0.material_index);
-//    fprintf(stderr, "Sphere1: material %d\n", sphere1.material_index);
-    // get texture uniform location
-//    GLint texture_location = glGetUniformLocation(shader_program, "tex");
-//    GLint props_location = glGetUniformLocation(shader_program, "props");
+}
+
+void debugCamera(Camera cam)
+{
+
+    fprintf(
+            stderr,
+            "Camera has: lookFrom: [%f, %f, %f]\n",
+            cam.look_from.x,
+            cam.look_from.y,
+            cam.look_from.z
+    );
+    fprintf(
+            stderr,
+            "Camera has: lower_left: [%f, %f, %f]\n",
+            cam.lower_left_corner.x,
+            cam.lower_left_corner.y,
+            cam.lower_left_corner.z
+    );
+}
+
+int main() {
+
+    glm::vec3 a = glm::vec3(1.0, 1.0, 1.0);
+    std::cout << sizeof(a) << std::endl;
+    std::cout << sizeof(struct CameraBlock) << std::endl;
+
+    window w(1280, 720);
+   // window w(1920, 1080);
+    //window w(4000, 4000);
+    w.init();
+    w.setWindowHints(GLFW_CONTEXT_VERSION_MAJOR, 4);
+    w.setWindowHints(GLFW_CONTEXT_VERSION_MINOR, 1);
+    w.setWindowHints(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
+    w.setWindowHints(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+
+    srand (time(NULL));
+
+    //glfwSetErrorCallback(error_callback);
+    //glfwSetKeyCallback(window, key_callback);
+
+    w.create();
+
+    Shader s("glsl/vertex.vert", "glsl/fragment.frag");
+    Shader t("glsl/texture.vert", "glsl/texture.frag");
+
+    glm::vec3 lookfrom = glm::vec3(13.0f, 3.0f, 3.14f);
+    glm::vec3 lookat = glm::vec3(0.0f, 0.0f, 0.0f);
+    glm::vec3 vup = glm::vec3(0.0f, 1.0f, 0.0f);
+    float dist_to_focus = glm::length(lookfrom - lookat);
+    CameraBlock camblock;
+    Camera cam(lookfrom, lookat, vup, 20, (float)w.framebuffer_width / (float)w.framebuffer_height, 0.0f, dist_to_focus, &w);
+    cam.createCamUBO(camblock);
+
+    std::vector<Sphere> world;
+    std::vector<Material> materials;
+    createRandomWorld(world, materials);
+    //createTestScene(world, materials);
 
     // vao and vbo handle
     GLuint vao, vbo, ibo;
@@ -273,13 +271,26 @@ int main() {
     glGenFramebuffers(1, &rayTraceFBO);
     glGenFramebuffers(1, &accumulateFBO);
 
+    // UBO buffers
+    unsigned int uboExampleBlock;
+    glGenBuffers(1, &uboExampleBlock);
+    glBindBuffer(GL_UNIFORM_BUFFER, uboExampleBlock);
+    glBufferData(GL_UNIFORM_BUFFER, sizeof(struct CameraBlock), NULL, GL_STATIC_DRAW); // allocate 152 bytes of memory
+    glBindBuffer(GL_UNIFORM_BUFFER, 0);
+
+    unsigned int CameraBlockIndex = glGetUniformBlockIndex(s.ID, "CameraBlock");
+    glUniformBlockBinding(s.ID, CameraBlockIndex, 0);
+    glBindBufferBase(GL_UNIFORM_BUFFER, 0, uboExampleBlock);
+    glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(camblock), &camblock);
+    glBindBuffer(GL_UNIFORM_BUFFER, 0);
+
 /*
     if(glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
         std::cout << "ERROR::FRAMEBUFFER:: Framebuffer is not complete!" << std::endl;
 */
 
     int frameCount = 1;
-    int previousFrameCount = 0;
+    int fpsCounter = 0;
     int currentAccumIndex = 0;
 
     double currentTime = 0.0f;
@@ -295,8 +306,8 @@ int main() {
         lookfrom.x -= 0.01f;
         //lookfrom.y += 0.005f;
         //lookfrom.z -= 0.05f;
-        Camera cam(lookfrom, lookat, vup, 20, (float)w.framebuffer_width / (float)w.framebuffer_height, 1/frameCount, dist_to_focus, &w);
-        frameCount = 1;
+        //Camera cam(lookfrom, lookat, vup, 20, (float)w.framebuffer_width / (float)w.framebuffer_height, 1/frameCount, dist_to_focus, &w);
+        //frameCount = 1;
         //debugCamera(cam);
 
         // clear first
@@ -370,11 +381,11 @@ int main() {
         // If a second has passed.
         if ( delta >= 1.0 )
         {
-            previousFrameCount = frameCount - previousFrameCount;
             char title [256] = {"\0"};
-            snprintf ( title, 255,"%s - [FPS: %3.4f]", "GLSL RTIW", (float)previousFrameCount / delta );
+            snprintf ( title, 255,"%s - [FPS: %3.4f]", "GLSL RTIW", (float)fpsCounter / delta );
             glfwSetWindowTitle (w.getGLFWWindow(), title);
 
+            fpsCounter = 0;
             previousTime = currentTime;
         }
 
@@ -384,6 +395,7 @@ int main() {
         // Ping-pong for next frame
         currentAccumIndex = 1 - currentAccumIndex;
         frameCount++;
+        fpsCounter++;
     }
 
     // delete the created objects

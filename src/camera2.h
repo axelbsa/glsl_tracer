@@ -13,13 +13,24 @@
 #include "glm/glm.hpp"
 #include "window.h"
 
+struct CameraBlock {
+    glm::vec4 lower_left_corner;   // 12
+    glm::vec4 horizontal;          // 12
+    glm::vec4 vertical;            // 12
+    glm::vec4 origin;              // 12
+    glm::vec4 u;                   // 12
+    glm::vec3 v;                   // 12
+    float lens_radius;             // 4
+                                   // Total 16 * 6 == 96
+};
+
 class Camera {
 public:
     window *win;
 
     Camera (glm::vec3 lookfrom, glm::vec3 lookat, glm::vec3 vup, float vfov, float aspect, float aparture, float focus_dist, window *win)
     {
-        win = win;
+        this->win = win;
         look_at = lookat;
         look_from = lookfrom;
         lens_radius = aparture / 2;
@@ -41,6 +52,16 @@ public:
         lower_left_corner = origin - half_width * focus_dist * u - half_height * focus_dist * v - focus_dist * w;
         horizontal = 2 * half_width * focus_dist * u;
         vertical = 2 * half_height * focus_dist * v;
+    }
+
+    void createCamUBO(CameraBlock &cam) {
+        cam.lower_left_corner = glm::vec4 (this->lower_left_corner, 0.0f);
+        cam.horizontal = glm::vec4(this->horizontal, 0.0f);
+        cam.vertical = glm::vec4 (this->vertical, 0.0f);
+        cam.origin = glm::vec4 (this->origin, 0.0f);
+        cam.u = glm::vec4 (this->u, 0.0f);
+        cam.v = glm::vec4 (this->v, 0.0f);
+        cam.lens_radius = this->lens_radius;
     }
 
     glm::vec3 origin;

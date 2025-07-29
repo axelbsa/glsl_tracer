@@ -13,6 +13,7 @@
 #define METAL 1
 #define DIELECTRIC 2
 
+
 struct Camera {
     vec3 lower_left_corner;
     vec3 horizontal;
@@ -49,6 +50,10 @@ uniform int NUM_SPHERES;
 uniform int frame_number;
 uniform Camera cam;
 uniform Sphere sphere[MAX_SPEHERS];
+layout (std140) uniform CameraBlock
+{
+    Camera cam2;
+};
 
 // This is a little stupid, but values comes in quadruplets, albedo[0], roughness[0], fuzz[0], ior[0] defines 1 material
 uniform vec3 material_albedo[MAX_MATERIALS];
@@ -514,7 +519,7 @@ void main() {
         float u = float(gl_FragCoord.x + RandomValue(state)) / float(props.x);
         float v = float(gl_FragCoord.y + RandomValue(state)) / float(props.y);
 
-        Ray r = get_ray(cam, u, v, state);
+        Ray r = get_ray(cam2, u, v, state);
         //col += color(r, pixelIndex, st);
         col += color(r, state, st);
     }

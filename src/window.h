@@ -20,6 +20,8 @@ public:
     uint32_t init();
     uint32_t create();
     uint32_t setWindowHints(uint32_t A, uint32_t B);
+    void queryOpenGLLimits();
+    bool checkSSBOSupport();
 
     GLFWwindow *getGLFWWindow();
     int framebuffer_width;
