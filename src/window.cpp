@@ -18,6 +18,8 @@
 
 #include "window.h"
 
+#include <string.h>
+
 static void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
     glViewport(0, 0, width, height);
     // Update your stored framebuffer dimensions
@@ -47,8 +49,6 @@ uint32_t window::create() {
     glfwSwapInterval( 0 );
 
     glfwSetFramebufferSizeCallback(w, framebuffer_size_callback);
-    queryOpenGLLimits();
-    checkSSBOSupport();
 
 #ifndef __APPLE__
     if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
@@ -67,6 +67,8 @@ uint32_t window::create() {
 
     // Set viewport to framebuffer size
     glViewport(0, 0, fbWidth, fbHeight);
+    checkSSBOSupport();
+    queryOpenGLLimits();
 
     return 0;
 }
@@ -86,11 +88,14 @@ void window::queryOpenGLLimits() {
 
     std::cout << "=== OpenGL Buffer Limits ===" << std::endl;
 
+    fprintf(stderr, "FOOOOOOO\n");
+
     // Maximum uniform block size (UBO)
     glGetIntegerv(GL_MAX_UNIFORM_BLOCK_SIZE, &value);
     std::cout << "GL_MAX_UNIFORM_BLOCK_SIZE: " << value << " bytes ("
-              << value / 1024.0f << " KB)" << std::endl;
+              << static_cast<float>(value) / 1024.0f << " KB)" << std::endl;
 
+    fprintf(stderr, "BARRRRRRRRR\n");
     // Maximum number of uniform buffer bindings
     glGetIntegerv(GL_MAX_UNIFORM_BUFFER_BINDINGS, &value);
     std::cout << "GL_MAX_UNIFORM_BUFFER_BINDINGS: " << value << std::endl;
