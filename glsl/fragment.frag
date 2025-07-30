@@ -413,9 +413,7 @@ vec3 color(Ray r, inout uint state, inout vec2 state2)
 
 void main() {
     vec2 st = gl_FragCoord.xy/props.xy;
-    uint pixelIndex = int(gl_FragCoord.y * props.x + gl_FragCoord.x);
     uint state = uint(gl_FragCoord.x) * 1973u + uint(gl_FragCoord.y) * 9277u + uint(frame_number) * 26699u;
-    state += frame_number * 26699;
 
     g_seed = random(gl_FragCoord.xy * (mod(time, 100.)));
     if(isnan(g_seed)) {
@@ -456,8 +454,8 @@ void main() {
 */
 
     //col = linearToSRGB(col);
-    col = pow(col, vec3(1.0/1.6)); // Lower the gamma some, i like the better even if it's wrong
+    col = pow(col, vec3(1.0/1.8)); // Lower the gamma some, i like the better even if it's wrong
 
     //FragColor = vec4(aces(col), 1.0f) * .999f;
-    FragColor = vec4(col, 1.0f) * .999;
+    FragColor = vec4(col, 1.0f);
 }

@@ -204,6 +204,7 @@ int main() {
     createRandomWorld(world, materials);
     //createTestScene(world, materials);
 
+
     // vao and vbo handle
     GLuint vao, vbo, ibo;
     glGenVertexArrays(1, &vao);
@@ -312,7 +313,7 @@ int main() {
         currentTime = glfwGetTime();
         delta = currentTime - previousTime;
 
-        lookfrom.x -= 0.08f;
+        lookfrom.x -= 0.05f;
         //lookfrom.y += 0.005f;
         //lookfrom.z -= 0.05f;
         Camera cam(lookfrom, lookat, vup, 20, (float)w.framebuffer_width / (float)w.framebuffer_height, 1/frameCount, dist_to_focus, &w);
