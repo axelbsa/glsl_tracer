@@ -26,7 +26,9 @@
 #include "material.h"
 #include "glm/glm.hpp"
 #include "sphere.h"
+#include "camera2.h"
 
+#define MAX_MATERIALS 1020
 
 class Shader
 {
@@ -154,6 +156,8 @@ public:
             //setInt(base + ".material_type", spheres[i].material_type);
         }
         setInt("NUM_SPHERES", static_cast<int>(spheres.size()));
+
+
     }
 
 
@@ -245,8 +249,55 @@ public:
         glUniformMatrix4fv(glGetUniformLocation(ID, name.c_str()), 1, GL_FALSE, &mat[0][0]);
     }
 
+    void setCamUbo(const std::string &name, CameraBlock &camblock, unsigned int uboExampleBlock) const
+    {
+        unsigned int CameraBlockIndex = glGetUniformBlockIndex(ID, name.c_str());
+        glUniformBlockBinding(ID, CameraBlockIndex, 0);
+        glBindBufferBase(GL_UNIFORM_BUFFER, 0, uboExampleBlock);
+        glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(camblock), &camblock);
+        glBindBuffer(GL_UNIFORM_BUFFER, 0);
+    }
 
+    void setSphereUbo(const std::string &name, std::vector<Sphere> &sph, unsigned int sphereBlock) const
+    {
+        unsigned int SphereBlockIndex = glGetUniformBlockIndex(ID, name.c_str());
+        glUniformBlockBinding(ID, SphereBlockIndex, 1);
+        glBindBufferBase(GL_UNIFORM_BUFFER, 1, sphereBlock);
+        glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(Sphere) * sph.size() , sph.data());
+        glBindBuffer(GL_UNIFORM_BUFFER, 0);
+        setInt("NUM_SPHERES", static_cast<int>(sph.size()));
+    }
 
+    void setMaterialUbo(const std::string &name, std::vector<Material> &mat, unsigned int MaterialBlock) const
+    {
+        struct pak_mat {
+            glm::vec4 albedo[MAX_MATERIALS];
+            float roughness[MAX_MATERIALS];
+            float fuzz[MAX_MATERIALS];
+            float ior[MAX_MATERIALS];
+        } __attribute__((aligned (16)));
+
+        std::vector<int> matertial_type;
+
+        int index = 0;
+        struct pak_mat p;
+        for (const auto& material : mat) {
+            p.albedo[index] = glm::vec4(material.albedo, 0.0f);
+            p.roughness[index] = material.roughness;
+            p.fuzz[index] = material.fuzz;
+            p.ior[index] = material.ior;
+            matertial_type.push_back(material.type);
+            index += 1;
+        }
+
+        unsigned int MaterialBlockIndex = glGetUniformBlockIndex(ID, name.c_str());
+        glUniformBlockBinding(ID, MaterialBlockIndex, 2);
+        glBindBufferBase(GL_UNIFORM_BUFFER, 2, MaterialBlock);
+        glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(pak_mat) , &p);
+        glBindBuffer(GL_UNIFORM_BUFFER, 0);
+
+        setIntArray("material_type", matertial_type.data(), matertial_type.size());
+    }
 
 private:
     // utility function for checking shader compilation/linking errors.

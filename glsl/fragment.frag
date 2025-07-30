@@ -1,12 +1,12 @@
 #version 410
 
-#define MAX_MATERIALS 144
+#define MAX_MATERIALS 1020
 #define MAX_FLOAT 1e5
 #define FLT_MAX 3.402823466e+38
 #define PHI 1.61803398874989484820459
 #define PI 3.1415926535897932385
 #define TAU 2. * PI
-#define MAX_SPEHERS 144
+#define MAX_SPHERES 2048
 
 // Material types as mapped on the cpu
 #define LAMBERTIAN 0
@@ -48,22 +48,28 @@ uniform sampler2D tex; // texture uniform
 uniform vec2 props;
 uniform int NUM_SPHERES;
 uniform int frame_number;
-uniform Camera cam;
-uniform Sphere sphere[MAX_SPEHERS];
 layout (std140) uniform CameraBlock
 {
-    Camera cam2;
+    Camera cam;
+};
+
+layout (std140) uniform SphereBlock
+{
+    Sphere sphere2[MAX_SPHERES];
 };
 
 // This is a little stupid, but values comes in quadruplets, albedo[0], roughness[0], fuzz[0], ior[0] defines 1 material
-uniform vec3 material_albedo[MAX_MATERIALS];
-uniform float material_roughness[MAX_MATERIALS];
-uniform float material_fuzz[MAX_MATERIALS];
-uniform float material_ior[MAX_MATERIALS];
-
+layout (std140) uniform MaterialBlock
+{
+    uniform vec3 material_albedo[MAX_MATERIALS];
+    uniform float material_roughness[MAX_MATERIALS];
+    uniform float material_fuzz[MAX_MATERIALS];
+    uniform float material_ior[MAX_MATERIALS];
+};
 // The idea is to have this array of int's be a lookup table for if the material type is lambertian, metal, etc
 // ex: material_type = [2,0,1,2,3,1,0, ...] that way we don't need the material_type in the sphere struct
 uniform int material_type[MAX_MATERIALS]; // 0=lambertian, 1=metal, 2=dielectric
+
 
 in vec2 ftexcoord;
 in vec4 gl_FragCoord;
@@ -264,7 +270,6 @@ bool dielectric_simple(Ray r, inout hit_record rec, inout vec3 attenuation, inou
     vec3 refracted = vec3(0.0f, 0.0f, 0.0f);
     float ref_idx = material_ior[rec.material_index];
 
-
     if (dot(direction(r), rec.normal) > 0) {
         outward_normal = -rec.normal;
         ni_over_nt = ref_idx;
@@ -277,13 +282,9 @@ bool dielectric_simple(Ray r, inout hit_record rec, inout vec3 attenuation, inou
         scattered = Ray(rec.p, refracted);
     } else {
         scattered = Ray(rec.p, reflected);
-        //attenuation = vec3(1.0, 0.8, 0.8);
-        //return false;
     }
     return true;
-
 }
-
 
 bool dielectric(Ray r, inout hit_record rec, inout vec3 attenuation, inout Ray scattered, inout uint state)
 {
@@ -306,15 +307,6 @@ bool dielectric(Ray r, inout hit_record rec, inout vec3 attenuation, inout Ray s
         cosine = -dot(direction(r), rec.normal) / length(direction(r));
     }
 
-/**
-    refracted = refract(direction(r), outward_normal, ni_over_nt);
-    if (dot(refracted, refracted) > 0.0) { // dot(V,V) returns 0 if V is 0 and > if V is something else
-        reflect_prob = schlick(cosine, ref_idx);
-    } else {
-        reflect_prob = 1.0f;
-    }
-*/
-
     if (_refract(direction(r), outward_normal, ni_over_nt, refracted)) {
         reflect_prob = schlick(cosine, ref_idx);
     } else {
@@ -322,82 +314,17 @@ bool dielectric(Ray r, inout hit_record rec, inout vec3 attenuation, inout Ray s
     }
 
     if (random_float(state) < reflect_prob) {
-        //attenuation = vec3(1.0f, 0.8f, 0.8f);
         scattered = Ray(rec.p, reflected);
     } else {
-        //attenuation = vec3(1.0f, 1.f, 1.0f);
         scattered = Ray(rec.p, refracted);
     }
-    //scattered = Ray(rec.p, refracted);
-
-    return true;
-
-/**
-    if (!can_refract) {
-        // Total internal reflection - MUST reflect
-        dir = reflect(unit_direction, outward_normal);
-    } else {
-        // Refraction is possible - use Fresnel to decide
-        float reflect_prob = schlick(cos_theta, ni_over_nt);
-        if (random_float2(state) < reflect_prob) {
-            dir = reflect(unit_direction, outward_normal);
-        } else {
-            dir = refract(unit_direction, outward_normal, ni_over_nt);
-        }
-    }
-    scattered = Ray(rec.p, dir);
-
-    if (!can_refract){
-        scattered = Ray(rec.p, reflected);
-    } else {
-        if (random_float(state) < reflect_prob) {
-            scattered = Ray(rec.p, reflected);
-        } else {
-            scattered = Ray(rec.p, refracted);
-        }
-    }
-*/
-
-}
-
-/**
-bool scatter(Ray r_in, hit_record rec, out vec3 attenuation, out Ray scattered, inout uint state) {
-    attenuation = vec3(1.0, 1.0, 1.0); // Glass doesn't absorb light
-    float ref_idx = material_ior[rec.material_index];
-
-    // Front face is not yet implemented in rec, it's the other implementation that has the normal
-    // in hit_record
-    float ni_over_nt = rec.front_face ? (1.0 / ref_idx) : ref_idx;
-
-    vec3 unit_direction = normalize(direction(r_in));
-    float cos_theta = min(dot(-unit_direction, rec.normal), 1.0);
-    float sin_theta = sqrt(1.0 - cos_theta * cos_theta);
-
-    // Total internal reflection check
-    if (ni_over_nt * sin_theta > 1.0) {
-        vec3 reflected = reflect(unit_direction, rec.normal);
-        scattered = Ray(rec.p, reflected);
-        return true;
-    }
-
-    // Fresnel reflectance
-    float reflect_prob = schlick(cos_theta, ni_over_nt);
-    if (random_float(state) < reflect_prob) {
-        vec3 reflected = reflect(unit_direction, rec.normal);
-        scattered = Ray(rec.p, reflected);
-    } else {
-        vec3 refracted = refract(unit_direction, rec.normal, ni_over_nt);
-        scattered = Ray(rec.p, refracted);
-    }
-
     return true;
 }
-*/
 
 bool hit_sphere(Ray r, float t_min, float t_max, int object_index, inout hit_record rec)
 {
-    vec3 center = sphere[object_index].center;
-    float radius = sphere[object_index].radius;
+    vec3 center = sphere2[object_index].center;
+    float radius = sphere2[object_index].radius;
 
     vec3 oc = origin(r) - center;
     float a = dot(direction(r), direction(r));
@@ -405,24 +332,21 @@ bool hit_sphere(Ray r, float t_min, float t_max, int object_index, inout hit_rec
     float c = dot(oc, oc) - radius * radius;
     float discriminant = b*b - 4*a*c;
 
-    if (discriminant > 0)
-    {
+    if (discriminant > 0) {
         float temp = (-b - sqrt(discriminant)) / (2*a);
-        if (temp < t_max && temp > t_min)
-        {
+        if (temp < t_max && temp > t_min) {
             rec.t = temp;
             rec.p = point_at_parameter(r, rec.t);
             rec.normal = (rec.p - center) / radius;
-            rec.material_index = sphere[object_index].material_index;
+            rec.material_index = sphere2[object_index].material_index;
             return true;
         }
         temp = (-b + sqrt(discriminant)) / (2*a);
-        if (temp < t_max && temp > t_min)
-        {
+        if (temp < t_max && temp > t_min) {
             rec.t = temp;
             rec.p = point_at_parameter(r, rec.t);
             rec.normal = (rec.p - center) / radius;
-            rec.material_index = sphere[object_index].material_index;
+            rec.material_index = sphere2[object_index].material_index;
             return true;
         }
     }
@@ -434,10 +358,8 @@ bool hittable_list_hit(Ray r, float t_min, float t_max, inout hit_record rec)
     hit_record temp_rec;
     bool hit_anything = false;
     float closest_so_far = MAX_FLOAT;
-    for (int i = 0; i < NUM_SPHERES; i++)
-    {
-        if (hit_sphere(r, t_min, closest_so_far, i, temp_rec))
-        {
+    for (int i = 0; i < NUM_SPHERES; i++) {
+        if (hit_sphere(r, t_min, closest_so_far, i, temp_rec)) {
             hit_anything = true;
             closest_so_far = temp_rec.t;
             rec = temp_rec;
@@ -451,46 +373,35 @@ vec3 color(Ray r, inout uint state, inout vec2 state2)
     Ray cur_ray = r;
     vec3 cur_attenuation = vec3(1.0f);
     vec2 f = vec2(1.0);
-    for(int i = 0; i < 50; i++)
-    {
+    for(int i = 0; i < 50; i++) {
         hit_record rec;
-        if ( hittable_list_hit(cur_ray, 0.001f, MAX_FLOAT, rec) )
-        {
+        if ( hittable_list_hit(cur_ray, 0.001f, MAX_FLOAT, rec) ) {
             Ray scattered;
             vec3 attenuation = vec3(0.0f);
-            if (material_type[rec.material_index] == LAMBERTIAN)
-            {
+            if (material_type[rec.material_index] == LAMBERTIAN) {
                 if(lambertian_material(cur_ray, rec, attenuation, scattered, state)) {
                     cur_attenuation *= attenuation;
                     cur_ray = scattered;
-                }else {
+                } else {
                     return vec3(0.0,0.0,0.0);
                 }
-
-            }
-            else if (material_type[rec.material_index] == METAL)
-            {
+            } else if (material_type[rec.material_index] == METAL) {
                 if (metal_material(cur_ray, rec, attenuation, scattered, state)) {
                     cur_attenuation *= attenuation;
                     cur_ray = scattered;
-                }else{
+                } else {
                     return vec3(0.0,0.0,0.0);
                 }
 
-            }
-            else if (material_type[rec.material_index] == DIELECTRIC)
-            {
+            } else if (material_type[rec.material_index] == DIELECTRIC) {
                 if (dielectric(cur_ray, rec, attenuation, scattered, state)) {
                     cur_attenuation *= attenuation;
                     cur_ray = scattered;
-                }else{
+                } else {
                     return vec3(0.0,0.0,0.0);
                 }
             }
-
-        }
-        else
-        {
+        } else {
             vec3 unit_direction = normalize(direction(cur_ray));
             float t = 0.5f*(unit_direction.y + 1.0f);
             vec3 c = (1.0f-t)*vec3(1.0, 1.0, 1.0) + t*vec3(0.5, 0.7, 1.0);
@@ -507,20 +418,18 @@ void main() {
     state += frame_number * 26699;
 
     g_seed = random(gl_FragCoord.xy * (mod(time, 100.)));
-    if(isnan(g_seed)){
+    if(isnan(g_seed)) {
         g_seed = 0.25;
     }
 
     vec3 col = vec3(0.0f);
 
 #define ns 1
-    for (int i = 0; i < ns; i++)
-    {
+    for (int i = 0; i < ns; i++) {
         float u = float(gl_FragCoord.x + RandomValue(state)) / float(props.x);
         float v = float(gl_FragCoord.y + RandomValue(state)) / float(props.y);
 
-        Ray r = get_ray(cam2, u, v, state);
-        //col += color(r, pixelIndex, st);
+        Ray r = get_ray(cam, u, v, state);
         col += color(r, state, st);
     }
 

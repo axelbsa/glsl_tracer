@@ -46,7 +46,7 @@ void createRandomWorld(std::vector<Sphere> &world, std::vector<Material> &materi
     materials.push_back(lambertian_0);
     world.push_back(ground);
 
-    int i = 5;
+    int i = 11;
     for (int a = -i; a < i; a++ ) {
         for (int b = -i; b < i; b++ ) {
             float choose_mat = random_double();
@@ -278,11 +278,20 @@ int main() {
     glBufferData(GL_UNIFORM_BUFFER, sizeof(struct CameraBlock), NULL, GL_STATIC_DRAW); // allocate 152 bytes of memory
     glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
-    unsigned int CameraBlockIndex = glGetUniformBlockIndex(s.ID, "CameraBlock");
-    glUniformBlockBinding(s.ID, CameraBlockIndex, 0);
-    glBindBufferBase(GL_UNIFORM_BUFFER, 0, uboExampleBlock);
-    glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(camblock), &camblock);
+    s.setCamUbo("CameraBlock", camblock, uboExampleBlock);
+
+    unsigned int sphereBlock;
+    glGenBuffers(1, &sphereBlock);
+    glBindBuffer(GL_UNIFORM_BUFFER, sphereBlock);
+    glBufferData(GL_UNIFORM_BUFFER, sizeof(Sphere) * world.size(), NULL, GL_STATIC_DRAW);
     glBindBuffer(GL_UNIFORM_BUFFER, 0);
+
+    unsigned int materialBlock;
+    glGenBuffers(1, &materialBlock);
+    glBindBuffer(GL_UNIFORM_BUFFER, materialBlock);
+    glBufferData(GL_UNIFORM_BUFFER, sizeof(Material) * 1020, NULL, GL_STATIC_DRAW);
+    glBindBuffer(GL_UNIFORM_BUFFER, 0);
+
 
 /*
     if(glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
@@ -303,11 +312,11 @@ int main() {
         currentTime = glfwGetTime();
         delta = currentTime - previousTime;
 
-        lookfrom.x -= 0.01f;
+        lookfrom.x -= 0.08f;
         //lookfrom.y += 0.005f;
         //lookfrom.z -= 0.05f;
-        //Camera cam(lookfrom, lookat, vup, 20, (float)w.framebuffer_width / (float)w.framebuffer_height, 1/frameCount, dist_to_focus, &w);
-        //frameCount = 1;
+        Camera cam(lookfrom, lookat, vup, 20, (float)w.framebuffer_width / (float)w.framebuffer_height, 1/frameCount, dist_to_focus, &w);
+        frameCount = 1;
         //debugCamera(cam);
 
         // clear first
@@ -325,16 +334,11 @@ int main() {
         s.setInt("frame_number", frameCount);  // Uncomment this when ready to sanple multiple frames
 
         // Camera Values
-        s.setVec3("cam.lower_left_corner", cam.lower_left_corner);
-        s.setVec3("cam.horizontal", cam.horizontal);
-        s.setVec3("cam.vertical", cam.vertical);
-        s.setVec3("cam.origin", cam.origin);
-        s.setVec3("cam.u", cam.u);
-        s.setVec3("cam.v", cam.v);
-        s.setFloat("cam.lens_radius", cam.lens_radius);
+        cam.createCamUBO(camblock);
+        s.setCamUbo("CameraBlock", camblock, uboExampleBlock);
 
-        s.setMaterials(materials);
-        s.setSpheres(world);
+        s.setMaterialUbo("MaterialBlock", materials, materialBlock);
+        s.setSphereUbo("SphereBlock", world, sphereBlock);
         s.setVec2("props", glm::vec2(w.framebuffer_width, w.framebuffer_height));
 
         glBindVertexArray(vao);
