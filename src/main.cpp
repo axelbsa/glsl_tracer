@@ -37,12 +37,16 @@ inline double random_double(double min, double max) {
     return min + (max-min)*random_double();
 }
 
-void createRandomWorld(std::vector<Sphere> &world, std::vector<Material> &materials)
+void createRandomWorld(
+        std::vector<Sphere> &world, std::vector<Material> &materials,
+        std::vector<ConstantTexture> &ctex, std::vector<CheckTexture> &checktex)
 {
     int material_index = 0;
+    int texture_index = 0;
     // Ground sphere
-    Material lambertian_0 = Material::lambertian(glm::vec3(0.5f, 0.5f, 0.5f));
-    Sphere ground{glm::vec3(0,-1000,-1), 1000, material_index++};
+    Material lambertian_0 = CreateMaterial::lambertian(glm::vec3(0.5f, 0.5f, 0.5f));
+    //ConstantTexture ctex_0 = CreateMaterial::ctex(glm::vec4(0.5f, 0.5f, 0.5f, 0.0f));
+    Sphere ground{glm::vec3(0,-1000,-1), 1000, material_index++, texture_index++};
     materials.push_back(lambertian_0);
     world.push_back(ground);
 
@@ -52,64 +56,66 @@ void createRandomWorld(std::vector<Sphere> &world, std::vector<Material> &materi
             float choose_mat = random_double();
             glm::vec3 center(a + 0.9 * random_double(), 0.2, b + 0.9 * random_double());
             if ( (glm::length(center - glm::vec3(4.0f, 0.2f, 0))) > 0.9) {
-                if (choose_mat < 0.8) {  // Lamertian, aka diffuse
-                    Material mat = Material::lambertian(
+                if (choose_mat < 0.8) {  // Lambertian, aka diffuse
+                    Material mat = CreateMaterial::lambertian(
                             glm::vec3(
                                     random_double() * random_double(),
                                     random_double() * random_double(),
                                     random_double() * random_double()));
-                    Sphere sphere{center, 0.2f, material_index++};
+                    Sphere sphere{center, 0.2f, material_index++, texture_index++};
                     materials.push_back(mat);
                     world.push_back(sphere);
                 } else if (choose_mat < 0.95) { // metal
-                    Material mat = Material::metal(
+                    Material mat = CreateMaterial::metal(
                             glm::vec3(
                                     0.5f * (1 + random_double()),
                                     0.5f * (1 + random_double()),
                                     0.5f * (1 + random_double())
                                     ),
                                     0.5 * random_double());
-                    Sphere sphere{center, 0.2f, material_index++};
+                    Sphere sphere{center, 0.2f, material_index++, texture_index++};
                     materials.push_back(mat);
                     world.push_back(sphere);
                 } else { // Else == glass
-                    Material mat = Material::dielectric(1.5f);
-                    Sphere sphere{center, 0.2f, material_index++};
+                    Material mat = CreateMaterial::dielectric(1.5f);
+                    Sphere sphere{center, 0.2f, material_index++, texture_index++};
                     materials.push_back(mat);
                     world.push_back(sphere);
                 }
             }
         }
     }
-    Material m_big_glass = Material::dielectric(1.5f);
-    Sphere s_big_glass{glm::vec3(0.0f, 1.0f, 0.0f), 1.0f, material_index++};
+    Material m_big_glass = CreateMaterial::dielectric(1.5f);
+    Sphere s_big_glass{glm::vec3(0.0f, 1.0f, 0.0f), 1.0f, material_index++, texture_index++};
     materials.push_back(m_big_glass);
     world.push_back(s_big_glass);
 
-    Material m_big_diffuse = Material::lambertian(glm::vec3(0.4f, 0.2f, 0.1f));
-    Sphere s_big_diffuse{glm::vec3(-4.0f, 1.0f, 0.0f), 1.0f, material_index++};
+    Material m_big_diffuse = CreateMaterial::lambertian(glm::vec3(0.4f, 0.2f, 0.1f));
+    Sphere s_big_diffuse{glm::vec3(-4.0f, 1.0f, 0.0f), 1.0f, material_index++, texture_index++};
     materials.push_back(m_big_diffuse);
     world.push_back(s_big_diffuse);
 
-    Material m_big_metal = Material::metal(glm::vec3(0.7f, 0.6f, 0.5f), 0.0f);
-    Sphere s_big_metal{glm::vec3(4.0f, 1.0f, 0.0f), 1.0f, material_index++};
+    Material m_big_metal = CreateMaterial::metal(glm::vec3(0.7f, 0.6f, 0.5f), 0.0f);
+    Sphere s_big_metal{glm::vec3(4.0f, 1.0f, 0.0f), 1.0f, material_index++, texture_index++};
     materials.push_back(m_big_metal);
     world.push_back(s_big_metal);
 }
 
-void createTestScene(std::vector<Sphere> &world, std::vector<Material> &materials)
+void createTestScene(
+        std::vector<Sphere> &world, std::vector<Material> &materials,
+        std::vector<ConstantTexture> &ctex, std::vector<CheckTexture> &checktex)
 {
 
-    Material lambertian_0 = Material::lambertian(glm::vec3(0.1f, 0.2f, 0.5f));
-    Material lambertian_1 = Material::lambertian(glm::vec3(0.8f, 0.8f, 0.0f));
+    Material lambertian_0 = CreateMaterial::lambertian(glm::vec3(0.1f, 0.2f, 0.5f));
+    Material lambertian_1 = CreateMaterial::lambertian(glm::vec3(0.8f, 0.8f, 0.0f));
 
-    Material metal_2 = Material::metal(glm::vec3(0.8f, 0.6f, 0.2f), 0.1f);
-    Material metal_3 = Material::metal(glm::vec3(0.8f, 0.8f, 0.8f), 1.0f);
-    Material dielectric_4 = Material::dielectric(1.5);
-    Material dielectric_5 = Material::dielectric(1.5);
+    Material metal_2 = CreateMaterial::metal(glm::vec3(0.8f, 0.6f, 0.2f), 0.1f);
+    Material metal_3 = CreateMaterial::metal(glm::vec3(0.8f, 0.8f, 0.8f), 1.0f);
+    Material dielectric_4 = CreateMaterial::dielectric(1.5);
+    Material dielectric_5 = CreateMaterial::dielectric(1.5);
 
-    Material lambertian_6 = Material::lambertian(glm::vec3(0.0f, 0.0f, 1.0f));
-    Material lambertian_7 = Material::lambertian(glm::vec3(1.0f, 0.0f, 0.0f));
+    Material lambertian_6 = CreateMaterial::lambertian(glm::vec3(0.0f, 0.0f, 1.0f));
+    Material lambertian_7 = CreateMaterial::lambertian(glm::vec3(1.0f, 0.0f, 0.0f));
 
     // Geometry setup
     Sphere sphere0{glm::vec3(0,-0.0f,-1.2), 0.5, 0};
@@ -201,8 +207,11 @@ int main() {
 
     std::vector<Sphere> world;
     std::vector<Material> materials;
-    createRandomWorld(world, materials);
-    //createTestScene(world, materials);
+    std::vector<ConstantTexture> ctex;
+    std::vector<CheckTexture> checktex;
+
+    createRandomWorld(world, materials, ctex, checktex);
+    //createTestScene(world, materials, ctex, checktex);
 
 
     // vao and vbo handle
@@ -273,13 +282,12 @@ int main() {
     glGenFramebuffers(1, &accumulateFBO);
 
     // UBO buffers
-    unsigned int uboExampleBlock;
-    glGenBuffers(1, &uboExampleBlock);
-    glBindBuffer(GL_UNIFORM_BUFFER, uboExampleBlock);
+    unsigned int cameraBlock;
+    glGenBuffers(1, &cameraBlock);
+    glBindBuffer(GL_UNIFORM_BUFFER, cameraBlock);
     glBufferData(GL_UNIFORM_BUFFER, sizeof(struct CameraBlock), NULL, GL_STATIC_DRAW); // allocate 152 bytes of memory
     glBindBuffer(GL_UNIFORM_BUFFER, 0);
-
-    s.setCamUbo("CameraBlock", camblock, uboExampleBlock);
+    s.setCamUbo("CameraBlock", camblock, cameraBlock);
 
     unsigned int sphereBlock;
     glGenBuffers(1, &sphereBlock);
@@ -290,7 +298,13 @@ int main() {
     unsigned int materialBlock;
     glGenBuffers(1, &materialBlock);
     glBindBuffer(GL_UNIFORM_BUFFER, materialBlock);
-    glBufferData(GL_UNIFORM_BUFFER, sizeof(Material) * 1020, NULL, GL_STATIC_DRAW);
+    glBufferData(GL_UNIFORM_BUFFER, sizeof(pak_mat), NULL, GL_STATIC_DRAW);
+    glBindBuffer(GL_UNIFORM_BUFFER, 0);
+
+    unsigned int constantTextureBlock;
+    glGenBuffers(1, &constantTextureBlock);
+    glBindBuffer(GL_UNIFORM_BUFFER, constantTextureBlock);
+    glBufferData(GL_UNIFORM_BUFFER, sizeof(ConstantTexture), NULL, GL_STATIC_DRAW);
     glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
 
@@ -316,8 +330,8 @@ int main() {
         lookfrom.x -= 0.05f;
         //lookfrom.y += 0.005f;
         //lookfrom.z -= 0.05f;
-        Camera cam(lookfrom, lookat, vup, 20, (float)w.framebuffer_width / (float)w.framebuffer_height, 1/frameCount, dist_to_focus, &w);
-        frameCount = 1;
+        //Camera cam(lookfrom, lookat, vup, 20, (float)w.framebuffer_width / (float)w.framebuffer_height, 1/frameCount, dist_to_focus, &w);
+        //frameCount = 1;
         //debugCamera(cam);
 
         // clear first
@@ -336,9 +350,9 @@ int main() {
 
         // Camera Values
         cam.createCamUBO(camblock);
-        s.setCamUbo("CameraBlock", camblock, uboExampleBlock);
+        s.setCamUbo("CameraBlock", camblock, cameraBlock);
 
-        s.setMaterialUbo("MaterialBlock", materials, materialBlock);
+        s.setMaterialUbo("MaterialBlock", materials, materialBlock, matType);
         s.setSphereUbo("SphereBlock", world, sphereBlock);
         s.setVec2("props", glm::vec2(w.framebuffer_width, w.framebuffer_height));
 

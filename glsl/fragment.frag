@@ -1,6 +1,6 @@
 #version 410
 
-#define MAX_MATERIALS 1020
+#define MAX_MATERIALS 512
 #define MAX_FLOAT 1e5
 #define FLT_MAX 3.402823466e+38
 #define PHI 1.61803398874989484820459
@@ -12,6 +12,10 @@
 #define LAMBERTIAN 0
 #define METAL 1
 #define DIELECTRIC 2
+#define LAMB_METAL 3
+#define SOLID_TEXTURE 4
+#define CHECKER_TEXTURE 5
+#define NOISE_TEXTURE 6
 
 
 struct Camera {
@@ -28,6 +32,7 @@ struct Sphere {
     vec3 center;
     float radius;
     int material_index;
+    int texture_index;
 };
 
 struct Ray {
@@ -41,6 +46,16 @@ struct hit_record
     vec3 p;
     vec3 normal;
     int material_index;
+    int texture_index;
+};
+
+struct ConstantTexture {
+    vec3 color;
+};
+
+struct CheckTexture {
+    vec3 odd;
+    vec3 even;
 };
 
 uniform float time;
@@ -58,6 +73,16 @@ layout (std140) uniform SphereBlock
     Sphere sphere2[MAX_SPHERES];
 };
 
+layout (std140) uniform ConstantTextureBlock
+{
+    ConstantTexture ctex[MAX_MATERIALS];
+};
+
+layout (std140) uniform CheckTextureBlock
+{
+    CheckTexture checktex[MAX_MATERIALS];
+};
+
 // This is a little stupid, but values comes in quadruplets, albedo[0], roughness[0], fuzz[0], ior[0] defines 1 material
 layout (std140) uniform MaterialBlock
 {
@@ -69,7 +94,6 @@ layout (std140) uniform MaterialBlock
 // The idea is to have this array of int's be a lookup table for if the material type is lambertian, metal, etc
 // ex: material_type = [2,0,1,2,3,1,0, ...] that way we don't need the material_type in the sphere struct
 uniform int material_type[MAX_MATERIALS]; // 0=lambertian, 1=metal, 2=dielectric
-
 
 in vec2 ftexcoord;
 in vec4 gl_FragCoord;
@@ -237,7 +261,7 @@ bool lambertian_material(Ray r, inout hit_record rec, inout vec3 attenuation, in
 {
     vec3 target = rec.p + rec.normal + random_in_unit_sphere2(state);
     scattered = Ray(rec.p, target - rec.p);
-    attenuation = material_albedo[rec.material_index];  // Some color, this will need to be parametracized
+    attenuation = material_albedo[rec.material_index];
     return true;
 }
 
@@ -245,7 +269,7 @@ bool metal_material(Ray r, inout hit_record rec, inout vec3 attenuation, inout R
 {
     vec3 reflected = reflect( normalize(direction(r)), rec.normal );
     scattered = Ray(rec.p, reflected + material_fuzz[rec.material_index]*random_in_unit_sphere2(state));
-    attenuation = material_albedo[rec.material_index];  // Some color, this will need to be parametracized
+    attenuation = material_albedo[rec.material_index];
     return ( dot( direction(scattered), rec.normal ) > 0 );
 }
 
@@ -293,6 +317,7 @@ bool dielectric(Ray r, inout hit_record rec, inout vec3 attenuation, inout Ray s
     float ni_over_nt;
     attenuation = vec3(1.0f, 1.0f, 1.0f);
     vec3 refracted;
+    //float ref_idx = 0.6;
     float ref_idx = material_ior[rec.material_index];
     float reflect_prob;
     float cosine;

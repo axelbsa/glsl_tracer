@@ -6,11 +6,35 @@
 
 #ifndef MATERIAL_H
 #define MATERIAL_H
+#define MAX_MATERIALS 512
+
 
 enum MaterialType {
     LAMBERTIAN,
     METAL,
-    DIELECTRIC
+    DIELECTRIC,
+    PLACEHOLDER_FOR_LAMB_METAL,
+    SOLID_TEXTURE,
+    CHECKER_TEXTURE,
+    NOISE_TEXTURE
+};
+
+std::vector<MaterialType> matType;
+
+struct pak_mat {
+    glm::vec4 albedo[MAX_MATERIALS];
+    glm::vec4 roughness[MAX_MATERIALS];
+    glm::vec4 fuzz[MAX_MATERIALS];
+    glm::vec4 ior[MAX_MATERIALS];
+};
+
+struct ConstantTexture {
+    glm::vec4 color;
+};
+
+struct CheckTexture {
+    glm::vec4 odd;
+    glm::vec4 even;
 };
 
 struct Material {
@@ -18,18 +42,34 @@ struct Material {
     float roughness;
     float fuzz;
     float ior;
-    MaterialType type;
+};
 
+struct CreateMaterial{
     static Material lambertian(const glm::vec3& albedo) {
-        return {albedo, 0.0f, 0.0f, 0.0f, LAMBERTIAN};
+        matType.push_back(LAMBERTIAN);
+        return {albedo, 0.0f, 0.0f, 0.0f};
     }
 
     static Material metal(const glm::vec3& albedo, float fuzz) {
-        return {albedo,0.0f, fuzz, 0.0f, METAL};
+        matType.push_back(METAL);
+        return {albedo,0.0f, fuzz, 0.0f};
     }
 
     static Material dielectric(float ior) {
-        return {glm::vec3(1.0f),0.0f, 0.0f, ior, DIELECTRIC};
+        matType.push_back(DIELECTRIC);
+        return {glm::vec3(1.0f),0.0f, 0.0f, ior};
+    }
+
+    static ConstantTexture ctex (const glm::vec4& albedo)
+    {
+        //matType.push_back(SOLID_TEXTURE);
+        return ConstantTexture{.color = albedo};
+    }
+
+    static CheckTexture checktex(const glm::vec4& odd, const glm::vec4 even)
+    {
+        //matType.push_back(CHECKER_TEXTURE);
+        return CheckTexture{.odd = odd, .even = even};
     }
 };
 

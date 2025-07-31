@@ -28,17 +28,16 @@
 #include "sphere.h"
 #include "camera2.h"
 
-#define MAX_MATERIALS 1020
 
-class Shader
-{
+class Shader {
 public:
     unsigned int ID;
+
     // constructor generates the shader on the fly
     // ------------------------------------------------------------------------
     Shader();
-    Shader(const char* vertexPath, const char* fragmentPath, const char* geometryPath = nullptr)
-    {
+
+    Shader(const char *vertexPath, const char *fragmentPath, const char *geometryPath = nullptr) {
         // 1. retrieve the vertex/fragment source code from filePath
         std::string vertexCode;
         std::string fragmentCode;
@@ -47,11 +46,10 @@ public:
         std::ifstream fShaderFile;
         std::ifstream gShaderFile;
         // ensure ifstream objects can throw exceptions:
-        vShaderFile.exceptions (std::ifstream::failbit | std::ifstream::badbit);
-        fShaderFile.exceptions (std::ifstream::failbit | std::ifstream::badbit);
-        gShaderFile.exceptions (std::ifstream::failbit | std::ifstream::badbit);
-        try
-        {
+        vShaderFile.exceptions(std::ifstream::failbit | std::ifstream::badbit);
+        fShaderFile.exceptions(std::ifstream::failbit | std::ifstream::badbit);
+        gShaderFile.exceptions(std::ifstream::failbit | std::ifstream::badbit);
+        try {
             // open files
             vShaderFile.open(vertexPath);
             fShaderFile.open(fragmentPath);
@@ -66,8 +64,7 @@ public:
             vertexCode = vShaderStream.str();
             fragmentCode = fShaderStream.str();
             // if geometry shader path is present, also load a geometry shader
-            if(geometryPath != nullptr)
-            {
+            if (geometryPath != nullptr) {
                 gShaderFile.open(geometryPath);
                 std::stringstream gShaderStream;
                 gShaderStream << gShaderFile.rdbuf();
@@ -75,13 +72,12 @@ public:
                 geometryCode = gShaderStream.str();
             }
         }
-        catch (std::ifstream::failure e)
-        {
+        catch (std::ifstream::failure e) {
             std::cout << "ERROR::SHADER::FILE_NOT_SUCCESFULLY_READ" << std::endl;
         }
 
-        const char* vShaderCode = vertexCode.c_str();
-        const char * fShaderCode = fragmentCode.c_str();
+        const char *vShaderCode = vertexCode.c_str();
+        const char *fShaderCode = fragmentCode.c_str();
         // 2. compile shaders
         unsigned int vertex, fragment;
         // vertex shader
@@ -96,9 +92,8 @@ public:
         checkCompileErrors(fragment, "FRAGMENT");
         // if geometry shader is given, compile geometry shader
         unsigned int geometry;
-        if(geometryPath != nullptr)
-        {
-            const char * gShaderCode = geometryCode.c_str();
+        if (geometryPath != nullptr) {
+            const char *gShaderCode = geometryCode.c_str();
             geometry = glCreateShader(GL_GEOMETRY_SHADER);
             glShaderSource(geometry, 1, &gShaderCode, NULL);
             glCompileShader(geometry);
@@ -108,19 +103,20 @@ public:
         ID = glCreateProgram();
         glAttachShader(ID, vertex);
         glAttachShader(ID, fragment);
-        if(geometryPath != nullptr)
+        if (geometryPath != nullptr)
             glAttachShader(ID, geometry);
         glLinkProgram(ID);
         checkCompileErrors(ID, "PROGRAM");
         // delete the shaders as they're linked into our program now and no longer necessery
         glDeleteShader(vertex);
         glDeleteShader(fragment);
-        if(geometryPath != nullptr)
+        if (geometryPath != nullptr)
             glDeleteShader(geometry);
 
     }
 
     // Upload all data to GPU
+    // TODO Remove this function, we use UBO now
     void setMaterials(const std::vector<Material> &materials) const {
         // Upload material data
         if (!materials.empty()) {
@@ -130,10 +126,10 @@ public:
             std::vector<float> fuzz_values;
             std::vector<float> ior_values;
 
-            for (const auto& mat : materials) {
+            for (const auto &mat: materials) {
                 albedos.push_back(mat.albedo);
                 roughness_values.push_back(mat.roughness);
-                types.push_back(static_cast<int>(mat.type));
+                //types.push_back(static_cast<int>(mat.type));
                 fuzz_values.push_back(mat.fuzz);
                 ior_values.push_back(mat.ior);
             }
@@ -146,7 +142,7 @@ public:
         }
     }
 
-    void setSpheres(const std::vector<Sphere>& spheres) const {
+    void setSpheres(const std::vector<Sphere> &spheres) const {
         for (size_t i = 0; i < spheres.size(); ++i) {
             std::string base = "sphere[" + std::to_string(i) + "]";
 
@@ -169,88 +165,71 @@ public:
 
     // utility uniform functions
     // ------------------------------------------------------------------------
-    void setBool(const std::string &name, const bool value) const
-    {
+    void setBool(const std::string &name, const bool value) const {
         glUniform1i(glGetUniformLocation(ID, name.c_str()), static_cast<int>(value));
     }
 
-    void setInt(const std::string &name, int value) const
-    {
+    void setInt(const std::string &name, int value) const {
         glUniform1i(glGetUniformLocation(ID, name.c_str()), value);
     }
 
-    void setUInt(const std::string &name, unsigned int value) const
-    {
+    void setUInt(const std::string &name, unsigned int value) const {
         glUniform1i(glGetUniformLocation(ID, name.c_str()), value);
     }
 
-    void setIntArray(const std::string &name, const int* values, const int count) const
-    {
+    void setIntArray(const std::string &name, const int *values, const int count) const {
         glUniform1iv(glGetUniformLocation(ID, name.c_str()), count, values);
     }
 
-    void setFloat(const std::string &name, const float value) const
-    {
+    void setFloat(const std::string &name, const float value) const {
         glUniform1f(glGetUniformLocation(ID, name.c_str()), value);
     }
 
-    void setFloatArray(const std::string &name, const float* values, const int count) const
-    {
+    void setFloatArray(const std::string &name, const float *values, const int count) const {
         glUniform1fv(glGetUniformLocation(ID, name.c_str()), count, values);
     }
 
-    void setVec2(const std::string &name, const glm::vec2 &value) const
-    {
+    void setVec2(const std::string &name, const glm::vec2 &value) const {
         glUniform2fv(glGetUniformLocation(ID, name.c_str()), 1, &value[0]);
     }
 
-    void setVec2(const std::string &name, float x, float y) const
-    {
+    void setVec2(const std::string &name, float x, float y) const {
         glUniform2f(glGetUniformLocation(ID, name.c_str()), x, y);
     }
 
-    void setVec3(const std::string &name, const glm::vec3 &value, const int count) const
-    {
+    void setVec3(const std::string &name, const glm::vec3 &value, const int count) const {
         glUniform3fv(glGetUniformLocation(ID, name.c_str()), count, &value[0]);
     }
 
-    void setVec3(const std::string &name, const glm::vec3 &value) const
-    {
+    void setVec3(const std::string &name, const glm::vec3 &value) const {
         glUniform3fv(glGetUniformLocation(ID, name.c_str()), 1, &value[0]);
     }
 
-    void setVec3(const std::string &name, float x, float y, float z) const
-    {
+    void setVec3(const std::string &name, float x, float y, float z) const {
         glUniform3f(glGetUniformLocation(ID, name.c_str()), x, y, z);
     }
 
-    void setVec4(const std::string &name, const glm::vec4 &value) const
-    {
+    void setVec4(const std::string &name, const glm::vec4 &value) const {
         glUniform4fv(glGetUniformLocation(ID, name.c_str()), 1, &value[0]);
     }
 
-    void setVec4(const std::string &name, float x, float y, float z, float w)
-    {
+    void setVec4(const std::string &name, float x, float y, float z, float w) {
         glUniform4f(glGetUniformLocation(ID, name.c_str()), x, y, z, w);
     }
 
-    void setMat2(const std::string &name, const glm::mat2 &mat) const
-    {
+    void setMat2(const std::string &name, const glm::mat2 &mat) const {
         glUniformMatrix2fv(glGetUniformLocation(ID, name.c_str()), 1, GL_FALSE, &mat[0][0]);
     }
 
-    void setMat3(const std::string &name, const glm::mat3 &mat) const
-    {
+    void setMat3(const std::string &name, const glm::mat3 &mat) const {
         glUniformMatrix3fv(glGetUniformLocation(ID, name.c_str()), 1, GL_FALSE, &mat[0][0]);
     }
 
-    void setMat4(const std::string &name, const glm::mat4 &mat) const
-    {
+    void setMat4(const std::string &name, const glm::mat4 &mat) const {
         glUniformMatrix4fv(glGetUniformLocation(ID, name.c_str()), 1, GL_FALSE, &mat[0][0]);
     }
 
-    void setCamUbo(const std::string &name, CameraBlock &camblock, unsigned int uboExampleBlock) const
-    {
+    void setCamUbo(const std::string &name, CameraBlock &camblock, unsigned int uboExampleBlock) const {
         unsigned int CameraBlockIndex = glGetUniformBlockIndex(ID, name.c_str());
         glUniformBlockBinding(ID, CameraBlockIndex, 0);
         glBindBufferBase(GL_UNIFORM_BUFFER, 0, uboExampleBlock);
@@ -258,50 +237,54 @@ public:
         glBindBuffer(GL_UNIFORM_BUFFER, 0);
     }
 
-    void setSphereUbo(const std::string &name, std::vector<Sphere> &sph, unsigned int sphereBlock) const
-    {
+    void setSphereUbo(const std::string &name, std::vector<Sphere> &sph, unsigned int sphereBlock) const {
         unsigned int SphereBlockIndex = glGetUniformBlockIndex(ID, name.c_str());
         glUniformBlockBinding(ID, SphereBlockIndex, 1);
         glBindBufferBase(GL_UNIFORM_BUFFER, 1, sphereBlock);
-        glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(Sphere) * sph.size() , sph.data());
+        glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(Sphere) * sph.size(), sph.data());
         glBindBuffer(GL_UNIFORM_BUFFER, 0);
         setInt("NUM_SPHERES", static_cast<int>(sph.size()));
     }
 
-    void setMaterialUbo(const std::string &name, std::vector<Material> &mat, unsigned int MaterialBlock) const
-    {
-        struct pak_mat {
-            glm::vec4 albedo[MAX_MATERIALS];
-            float roughness[MAX_MATERIALS];
-            float fuzz[MAX_MATERIALS];
-            float ior[MAX_MATERIALS];
-        } __attribute__((aligned (16)));
-
+    void setMaterialUbo(
+            const std::string &name, std::vector<Material> &mat,
+            unsigned int MaterialBlock, std::vector<MaterialType> &matType) const {
         std::vector<int> matertial_type;
 
         int index = 0;
         struct pak_mat p;
-        for (const auto& material : mat) {
-            p.albedo[index] = glm::vec4(material.albedo, 0.0f);
-            p.roughness[index] = material.roughness;
-            p.fuzz[index] = material.fuzz;
-            p.ior[index] = material.ior;
-            matertial_type.push_back(material.type);
+        for (const auto &material: mat) {
+            p.albedo[index] = glm::vec4(material.albedo, 0);
+            p.roughness[index] = glm::vec4(material.roughness, 0, 0, 0);
+            p.fuzz[index] = glm::vec4(material.fuzz, 0, 0, 0);
+            p.ior[index] = glm::vec4(material.ior, 0, 0, 0);
+            matertial_type.push_back(matType[index]);
             index += 1;
         }
 
         unsigned int MaterialBlockIndex = glGetUniformBlockIndex(ID, name.c_str());
         glUniformBlockBinding(ID, MaterialBlockIndex, 2);
         glBindBufferBase(GL_UNIFORM_BUFFER, 2, MaterialBlock);
-        glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(pak_mat) , &p);
+        glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(pak_mat), &p);
         glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
         setIntArray("material_type", matertial_type.data(), matertial_type.size());
     }
 
+
+//    void setConstantTextureUbo(const std::string &name, std::vector<Material> &mat, unsigned int MaterialBlock) const {
+////        unsigned int MaterialBlockIndex = glGetUniformBlockIndex(ID, name.c_str());
+////        glUniformBlockBinding(ID, MaterialBlockIndex, 2);
+////        glBindBufferBase(GL_UNIFORM_BUFFER, 2, MaterialBlock);
+////        glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(pak_mat), &p);
+////        glBindBuffer(GL_UNIFORM_BUFFER, 0);
+//    }
+
 private:
     // utility function for checking shader compilation/linking errors.
     // ------------------------------------------------------------------------
+
+
     void checkCompileErrors(GLuint shader, std::string type)
     {
         GLint success;
@@ -326,8 +309,4 @@ private:
         }
     }
 };
-
-
-
-
 #endif //MAIN_SHADER_H
