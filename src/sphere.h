@@ -14,6 +14,7 @@ public:
     float radius;
     int material_index;
     int texture_index;
+    int material_type;
 } __attribute__((aligned (16)));
 
 #endif //MAIN_SPHERE_H

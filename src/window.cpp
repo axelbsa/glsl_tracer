@@ -87,15 +87,11 @@ void window::queryOpenGLLimits() {
     GLint value;
 
     std::cout << "=== OpenGL Buffer Limits ===" << std::endl;
-
-    fprintf(stderr, "FOOOOOOO\n");
-
     // Maximum uniform block size (UBO)
     glGetIntegerv(GL_MAX_UNIFORM_BLOCK_SIZE, &value);
     std::cout << "GL_MAX_UNIFORM_BLOCK_SIZE: " << value << " bytes ("
               << static_cast<float>(value) / 1024.0f << " KB)" << std::endl;
 
-    fprintf(stderr, "BARRRRRRRRR\n");
     // Maximum number of uniform buffer bindings
     glGetIntegerv(GL_MAX_UNIFORM_BUFFER_BINDINGS, &value);
     std::cout << "GL_MAX_UNIFORM_BUFFER_BINDINGS: " << value << std::endl;

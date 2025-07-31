@@ -33,6 +33,7 @@ struct Sphere {
     float radius;
     int material_index;
     int texture_index;
+    int material_type;
 };
 
 struct Ray {
@@ -47,6 +48,7 @@ struct hit_record
     vec3 normal;
     int material_index;
     int texture_index;
+    int material_type;
 };
 
 struct ConstantTexture {
@@ -63,6 +65,7 @@ uniform sampler2D tex; // texture uniform
 uniform vec2 props;
 uniform int NUM_SPHERES;
 uniform int frame_number;
+
 layout (std140) uniform CameraBlock
 {
     Camera cam;
@@ -93,7 +96,7 @@ layout (std140) uniform MaterialBlock
 };
 // The idea is to have this array of int's be a lookup table for if the material type is lambertian, metal, etc
 // ex: material_type = [2,0,1,2,3,1,0, ...] that way we don't need the material_type in the sphere struct
-uniform int material_type[MAX_MATERIALS]; // 0=lambertian, 1=metal, 2=dielectric
+//uniform int material_type[MAX_MATERIALS]; // 0=lambertian, 1=metal, 2=dielectric
 
 in vec2 ftexcoord;
 in vec4 gl_FragCoord;
@@ -257,6 +260,14 @@ Ray get_ray(Camera cam, float s, float t, inout uint state)
         cam.lower_left_corner + s * cam.horizontal + t * cam.vertical - cam.origin - offset);
 }
 
+bool lambertian_texture(Ray r, inout hit_record rec, inout vec3 attenuation, inout Ray scattered, inout uint state)
+{
+    vec3 target = rec.p + rec.normal + random_in_unit_sphere2(state);
+    scattered = Ray(rec.p, target - rec.p);
+    attenuation = ctex[rec.texture_index].color;
+    return true;
+}
+
 bool lambertian_material(Ray r, inout hit_record rec, inout vec3 attenuation, inout Ray scattered, inout uint state)
 {
     vec3 target = rec.p + rec.normal + random_in_unit_sphere2(state);
@@ -363,7 +374,9 @@ bool hit_sphere(Ray r, float t_min, float t_max, int object_index, inout hit_rec
             rec.t = temp;
             rec.p = point_at_parameter(r, rec.t);
             rec.normal = (rec.p - center) / radius;
+            rec.material_type = sphere2[object_index].material_type;
             rec.material_index = sphere2[object_index].material_index;
+            rec.texture_index = sphere2[object_index].texture_index;
             return true;
         }
         temp = (-b + sqrt(discriminant)) / (2*a);
@@ -371,7 +384,9 @@ bool hit_sphere(Ray r, float t_min, float t_max, int object_index, inout hit_rec
             rec.t = temp;
             rec.p = point_at_parameter(r, rec.t);
             rec.normal = (rec.p - center) / radius;
+            rec.material_type = sphere2[object_index].material_type;
             rec.material_index = sphere2[object_index].material_index;
+            rec.texture_index = sphere2[object_index].texture_index;
             return true;
         }
     }
@@ -403,14 +418,14 @@ vec3 color(Ray r, inout uint state, inout vec2 state2)
         if ( hittable_list_hit(cur_ray, 0.001f, MAX_FLOAT, rec) ) {
             Ray scattered;
             vec3 attenuation = vec3(0.0f);
-            if (material_type[rec.material_index] == LAMBERTIAN) {
+            if (rec.material_type == LAMBERTIAN) {
                 if(lambertian_material(cur_ray, rec, attenuation, scattered, state)) {
                     cur_attenuation *= attenuation;
                     cur_ray = scattered;
                 } else {
                     return vec3(0.0,0.0,0.0);
                 }
-            } else if (material_type[rec.material_index] == METAL) {
+            } else if (rec.material_type == METAL) {
                 if (metal_material(cur_ray, rec, attenuation, scattered, state)) {
                     cur_attenuation *= attenuation;
                     cur_ray = scattered;
@@ -418,8 +433,16 @@ vec3 color(Ray r, inout uint state, inout vec2 state2)
                     return vec3(0.0,0.0,0.0);
                 }
 
-            } else if (material_type[rec.material_index] == DIELECTRIC) {
+            } else if (rec.material_type == DIELECTRIC) {
                 if (dielectric(cur_ray, rec, attenuation, scattered, state)) {
+                    cur_attenuation *= attenuation;
+                    cur_ray = scattered;
+                } else {
+                    return vec3(0.0,0.0,0.0);
+                }
+
+            } else if (rec.material_type == SOLID_TEXTURE) {
+                if(lambertian_texture(cur_ray, rec, attenuation, scattered, state)) {
                     cur_attenuation *= attenuation;
                     cur_ray = scattered;
                 } else {

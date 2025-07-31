@@ -48,12 +48,13 @@ void createRandomWorld(
     //ConstantTexture ctex_0 = CreateMaterial::ctex(glm::vec4(0.5f, 0.5f, 0.5f, 0.0f));
     Sphere ground{glm::vec3(0,-1000,-1), 1000, material_index++, texture_index++};
     materials.push_back(lambertian_0);
+    //ctex.push_back(ctex_0);
     world.push_back(ground);
 
     int i = 11;
     for (int a = -i; a < i; a++ ) {
         for (int b = -i; b < i; b++ ) {
-            float choose_mat = random_double();
+            double choose_mat = random_double();
             glm::vec3 center(a + 0.9 * random_double(), 0.2, b + 0.9 * random_double());
             if ( (glm::length(center - glm::vec3(4.0f, 0.2f, 0))) > 0.9) {
                 if (choose_mat < 0.8) {  // Lambertian, aka diffuse
@@ -101,6 +102,42 @@ void createRandomWorld(
     world.push_back(s_big_metal);
 }
 
+void createSimpleTestScene(
+        std::vector<Sphere> &world, std::vector<Material> &materials,
+        std::vector<ConstantTexture> &ctex, std::vector<CheckTexture> &checktex)
+{
+
+    ConstantTexture ctex_0 = CreateMaterial::ctex(glm::vec4(0.1f, 0.1f, 0.1f, 0.0f));
+    Material dielectric_0 = CreateMaterial::dielectric(1.5);
+    Material lambertian_1 = CreateMaterial::lambertian(glm::vec3(0.1f, 0.2f, 0.5f));
+    Material metal_2 = CreateMaterial::metal(glm::vec3(0.8f, 0.6f, 0.2f), 0.1f);
+
+    Sphere sphere0{glm::vec3(0,-0.0f,-1.2), 0.5, 1, -1, LAMBERTIAN};
+    Sphere sphere1{glm::vec3(0,-100.5,-1), 100, -1, 0, SOLID_TEXTURE};
+    Sphere sphere2{glm::vec3(1,-0.0f,-1), 0.5, 2, 0, METAL};
+    Sphere sphere3{glm::vec3(-1,-0.0f,-1), 0.5, 0, 0, DIELECTRIC};
+
+    ctex.push_back(ctex_0);
+
+    materials.push_back(dielectric_0);
+    materials.push_back(lambertian_1);
+    materials.push_back(metal_2);
+
+    world.push_back(sphere0);
+    world.push_back(sphere1);
+    world.push_back(sphere2);
+    world.push_back(sphere3);
+
+    for (auto m: matType) {
+        fprintf(stderr, "Material type: %d\n", m);
+    }
+
+    for (int i = 0; i < world.size(); i++) {
+        fprintf(stderr, "Sphere mat type: %d\n", world[i].material_type);
+    }
+}
+
+
 void createTestScene(
         std::vector<Sphere> &world, std::vector<Material> &materials,
         std::vector<ConstantTexture> &ctex, std::vector<CheckTexture> &checktex)
@@ -108,6 +145,8 @@ void createTestScene(
 
     Material lambertian_0 = CreateMaterial::lambertian(glm::vec3(0.1f, 0.2f, 0.5f));
     Material lambertian_1 = CreateMaterial::lambertian(glm::vec3(0.8f, 0.8f, 0.0f));
+
+    ConstantTexture ctex_0 = CreateMaterial::ctex(glm::vec4(0.8f, 0.8f, 0.0f, 0.0f));
 
     Material metal_2 = CreateMaterial::metal(glm::vec3(0.8f, 0.6f, 0.2f), 0.1f);
     Material metal_3 = CreateMaterial::metal(glm::vec3(0.8f, 0.8f, 0.8f), 1.0f);
@@ -118,13 +157,13 @@ void createTestScene(
     Material lambertian_7 = CreateMaterial::lambertian(glm::vec3(1.0f, 0.0f, 0.0f));
 
     // Geometry setup
-    Sphere sphere0{glm::vec3(0,-0.0f,-1.2), 0.5, 0};
-    Sphere sphere1{glm::vec3(0,-100.5,-1), 100, 1};
+    Sphere sphere0{glm::vec3(0,-0.0f,-1.2), 0.5, 0, -1, LAMBERTIAN};
+    Sphere sphere1{glm::vec3(0,-100.5,-1), 100, 0, 0, SOLID_TEXTURE};
 
-    Sphere sphere2{glm::vec3(1,-0.0f,-1), 0.5, 2};
+    Sphere sphere2{glm::vec3(1,-0.0f,-1), 0.5, 2, -1, METAL};
 
-    Sphere sphere3{glm::vec3(-1,-0.0f,-1), 0.5, 4};
-    Sphere sphere4{glm::vec3(-1,-0.0f,-1), -0.4, 5};
+    Sphere sphere3{glm::vec3(-1,-0.0f,-1), 0.5, 4,-1, DIELECTRIC};
+    Sphere sphere4{glm::vec3(-1,-0.0f,-1), -0.4, 5, -1, DIELECTRIC};
 
     float R = cos(M_PI/4);
     Sphere sphere5{glm::vec3(-R,0.0f,-1), R, 6};
@@ -137,6 +176,10 @@ void createTestScene(
             sphere2,
             sphere3,
             sphere4,
+    };
+
+    ctex = {
+        ctex_0
     };
 
     // Add materials to list
@@ -179,8 +222,8 @@ int main() {
     std::cout << sizeof(struct CameraBlock) << std::endl;
 
     window w(1280, 720);
-   // window w(1920, 1080);
-    //window w(4000, 4000);
+    // window w(1920, 1080);
+    // window w(4000, 4000);
     w.init();
     w.setWindowHints(GLFW_CONTEXT_VERSION_MAJOR, 4);
     w.setWindowHints(GLFW_CONTEXT_VERSION_MINOR, 1);
@@ -197,7 +240,8 @@ int main() {
     Shader s("glsl/vertex.vert", "glsl/fragment.frag");
     Shader t("glsl/texture.vert", "glsl/texture.frag");
 
-    glm::vec3 lookfrom = glm::vec3(13.0f, 3.0f, 3.14f);
+    //glm::vec3 lookfrom = glm::vec3(13.0f, 3.0f, 3.14f);
+    glm::vec3 lookfrom = glm::vec3(0.0f, 1.5f, 5.14f);
     glm::vec3 lookat = glm::vec3(0.0f, 0.0f, 0.0f);
     glm::vec3 vup = glm::vec3(0.0f, 1.0f, 0.0f);
     float dist_to_focus = glm::length(lookfrom - lookat);
@@ -210,8 +254,9 @@ int main() {
     std::vector<ConstantTexture> ctex;
     std::vector<CheckTexture> checktex;
 
-    createRandomWorld(world, materials, ctex, checktex);
-    //createTestScene(world, materials, ctex, checktex);
+    //createRandomWorld(world, materials, ctex, checktex);
+    createTestScene(world, materials, ctex, checktex);
+    //createSimpleTestScene(world, materials, ctex, checktex);
 
 
     // vao and vbo handle
@@ -352,8 +397,10 @@ int main() {
         cam.createCamUBO(camblock);
         s.setCamUbo("CameraBlock", camblock, cameraBlock);
 
-        s.setMaterialUbo("MaterialBlock", materials, materialBlock, matType);
+        s.setMaterialUbo("MaterialBlock", materials, materialBlock);
+        s.setConstantTextureUbo("ConstantTextureBlock", ctex, constantTextureBlock);
         s.setSphereUbo("SphereBlock", world, sphereBlock);
+        //s.setIntArray("material_type", matType.data(), matType.size());
         s.setVec2("props", glm::vec2(w.framebuffer_width, w.framebuffer_height));
 
         glBindVertexArray(vao);

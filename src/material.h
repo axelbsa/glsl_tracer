@@ -19,7 +19,7 @@ enum MaterialType {
     NOISE_TEXTURE
 };
 
-std::vector<MaterialType> matType;
+std::vector<int> matType;
 
 struct pak_mat {
     glm::vec4 albedo[MAX_MATERIALS];
@@ -50,20 +50,20 @@ struct CreateMaterial{
         return {albedo, 0.0f, 0.0f, 0.0f};
     }
 
-    static Material metal(const glm::vec3& albedo, float fuzz) {
+    static Material metal(const glm::vec3& albedo, const float fuzz) {
         matType.push_back(METAL);
         return {albedo,0.0f, fuzz, 0.0f};
     }
 
-    static Material dielectric(float ior) {
+    static Material dielectric(const float ior) {
         matType.push_back(DIELECTRIC);
         return {glm::vec3(1.0f),0.0f, 0.0f, ior};
     }
 
     static ConstantTexture ctex (const glm::vec4& albedo)
     {
-        //matType.push_back(SOLID_TEXTURE);
-        return ConstantTexture{.color = albedo};
+        matType.push_back(SOLID_TEXTURE);
+        return {albedo};
     }
 
     static CheckTexture checktex(const glm::vec4& odd, const glm::vec4 even)
@@ -72,7 +72,5 @@ struct CreateMaterial{
         return CheckTexture{.odd = odd, .even = even};
     }
 };
-
-
 
 #endif //MATERIAL_H

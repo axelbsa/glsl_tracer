@@ -237,7 +237,7 @@ public:
         glBindBuffer(GL_UNIFORM_BUFFER, 0);
     }
 
-    void setSphereUbo(const std::string &name, std::vector<Sphere> &sph, unsigned int sphereBlock) const {
+    void setSphereUbo(const std::string &name, const std::vector<Sphere> &sph, const unsigned int sphereBlock) const {
         unsigned int SphereBlockIndex = glGetUniformBlockIndex(ID, name.c_str());
         glUniformBlockBinding(ID, SphereBlockIndex, 1);
         glBindBufferBase(GL_UNIFORM_BUFFER, 1, sphereBlock);
@@ -246,19 +246,15 @@ public:
         setInt("NUM_SPHERES", static_cast<int>(sph.size()));
     }
 
-    void setMaterialUbo(
-            const std::string &name, std::vector<Material> &mat,
-            unsigned int MaterialBlock, std::vector<MaterialType> &matType) const {
-        std::vector<int> matertial_type;
+    void setMaterialUbo(const std::string &name, std::vector<Material> &mat, unsigned int MaterialBlock) const {
 
         int index = 0;
-        struct pak_mat p;
+        pak_mat p;
         for (const auto &material: mat) {
             p.albedo[index] = glm::vec4(material.albedo, 0);
             p.roughness[index] = glm::vec4(material.roughness, 0, 0, 0);
             p.fuzz[index] = glm::vec4(material.fuzz, 0, 0, 0);
             p.ior[index] = glm::vec4(material.ior, 0, 0, 0);
-            matertial_type.push_back(matType[index]);
             index += 1;
         }
 
@@ -268,17 +264,17 @@ public:
         glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(pak_mat), &p);
         glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
-        setIntArray("material_type", matertial_type.data(), matertial_type.size());
     }
 
 
-//    void setConstantTextureUbo(const std::string &name, std::vector<Material> &mat, unsigned int MaterialBlock) const {
-////        unsigned int MaterialBlockIndex = glGetUniformBlockIndex(ID, name.c_str());
-////        glUniformBlockBinding(ID, MaterialBlockIndex, 2);
-////        glBindBufferBase(GL_UNIFORM_BUFFER, 2, MaterialBlock);
-////        glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(pak_mat), &p);
-////        glBindBuffer(GL_UNIFORM_BUFFER, 0);
-//    }
+    void setConstantTextureUbo(const std::string &name, const std::vector<ConstantTexture> &ctex, const unsigned int ConstantTextureBlock) const {
+
+        unsigned int cTexBlockIndex = glGetUniformBlockIndex(ID, name.c_str());
+        glUniformBlockBinding(ID, cTexBlockIndex, 3);
+        glBindBufferBase(GL_UNIFORM_BUFFER, 3, ConstantTextureBlock);
+        glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(ConstantTexture) * ctex.size(), ctex.data());
+        glBindBuffer(GL_UNIFORM_BUFFER, 0);
+    }
 
 private:
     // utility function for checking shader compilation/linking errors.
