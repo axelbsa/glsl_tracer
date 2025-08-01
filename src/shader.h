@@ -266,13 +266,19 @@ public:
 
     }
 
-
     void setConstantTextureUbo(const std::string &name, const std::vector<ConstantTexture> &ctex, const unsigned int ConstantTextureBlock) const {
-
         unsigned int cTexBlockIndex = glGetUniformBlockIndex(ID, name.c_str());
         glUniformBlockBinding(ID, cTexBlockIndex, 3);
         glBindBufferBase(GL_UNIFORM_BUFFER, 3, ConstantTextureBlock);
         glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(ConstantTexture) * ctex.size(), ctex.data());
+        glBindBuffer(GL_UNIFORM_BUFFER, 0);
+    }
+
+    void setCheckerTextureUbo(const std::string &name, const std::vector<CheckTexture> &checkTex, const unsigned int CheckerTextureBlock) const {
+        unsigned int blockIndex = glGetUniformBlockIndex(ID, name.c_str());
+        glUniformBlockBinding(ID, blockIndex, 4);
+        glBindBufferBase(GL_UNIFORM_BUFFER, 4, CheckerTextureBlock);
+        glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(CheckTexture) * checkTex.size(), checkTex.data());
         glBindBuffer(GL_UNIFORM_BUFFER, 0);
     }
 

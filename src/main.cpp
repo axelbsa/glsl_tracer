@@ -37,18 +37,34 @@ inline double random_double(double min, double max) {
     return min + (max-min)*random_double();
 }
 
+void updateSpheres(std::vector<Sphere> &world, double delta_time)
+{
+    int randomSphere = std::rand() % world.size();
+    world[2].center.y += sin(0.001);
+    world[2].center.x -= sin(0.0001);
+
+    world[3].center.y -= sin(0.001);
+    world[3].center.x += sin(0.0004);
+    world[3].center.z += sin(0.0005);
+
+}
+
 void createRandomWorld(
         std::vector<Sphere> &world, std::vector<Material> &materials,
         std::vector<ConstantTexture> &ctex, std::vector<CheckTexture> &checktex)
 {
     int material_index = 0;
     int texture_index = 0;
+    CheckTexture check_tex_0 = CreateMaterial::checktex(
+            glm::vec4(1, 0.0f, 0.0f, 1.0f),
+            glm::vec4(1.0f, 0.8f, 0.0f, 1.0f));
     // Ground sphere
     Material lambertian_0 = CreateMaterial::lambertian(glm::vec3(0.5f, 0.5f, 0.5f));
-    //ConstantTexture ctex_0 = CreateMaterial::ctex(glm::vec4(0.5f, 0.5f, 0.5f, 0.0f));
-    Sphere ground{glm::vec3(0,-1000,-1), 1000, material_index++, texture_index++};
+    ConstantTexture ctex_0 = CreateMaterial::ctex(glm::vec4(0.5f, 0.5f, 0.5f, 0.0f));
+    Sphere ground{glm::vec3(0,-1000,-1), 1000, material_index++, 0, CHECKER_TEXTURE};
     materials.push_back(lambertian_0);
-    //ctex.push_back(ctex_0);
+    ctex.push_back(ctex_0);
+    checktex.push_back(check_tex_0);
     world.push_back(ground);
 
     int i = 11;
@@ -63,7 +79,7 @@ void createRandomWorld(
                                     random_double() * random_double(),
                                     random_double() * random_double(),
                                     random_double() * random_double()));
-                    Sphere sphere{center, 0.2f, material_index++, texture_index++};
+                    Sphere sphere{center, 0.2f, material_index++, texture_index++, LAMBERTIAN};
                     materials.push_back(mat);
                     world.push_back(sphere);
                 } else if (choose_mat < 0.95) { // metal
@@ -74,12 +90,12 @@ void createRandomWorld(
                                     0.5f * (1 + random_double())
                                     ),
                                     0.5 * random_double());
-                    Sphere sphere{center, 0.2f, material_index++, texture_index++};
+                    Sphere sphere{center, 0.2f, material_index++, texture_index++, METAL};
                     materials.push_back(mat);
                     world.push_back(sphere);
                 } else { // Else == glass
                     Material mat = CreateMaterial::dielectric(1.5f);
-                    Sphere sphere{center, 0.2f, material_index++, texture_index++};
+                    Sphere sphere{center, 0.2f, material_index++, texture_index++, DIELECTRIC};
                     materials.push_back(mat);
                     world.push_back(sphere);
                 }
@@ -87,17 +103,23 @@ void createRandomWorld(
         }
     }
     Material m_big_glass = CreateMaterial::dielectric(1.5f);
-    Sphere s_big_glass{glm::vec3(0.0f, 1.0f, 0.0f), 1.0f, material_index++, texture_index++};
+    Sphere s_big_glass{
+        glm::vec3(0.0f, 1.0f, 0.0f),
+        1.0f, material_index++, texture_index++, DIELECTRIC};
     materials.push_back(m_big_glass);
     world.push_back(s_big_glass);
 
     Material m_big_diffuse = CreateMaterial::lambertian(glm::vec3(0.4f, 0.2f, 0.1f));
-    Sphere s_big_diffuse{glm::vec3(-4.0f, 1.0f, 0.0f), 1.0f, material_index++, texture_index++};
+    Sphere s_big_diffuse{
+        glm::vec3(-4.0f, 1.0f, 0.0f),
+        1.0f, material_index++, texture_index++, LAMBERTIAN};
     materials.push_back(m_big_diffuse);
     world.push_back(s_big_diffuse);
 
     Material m_big_metal = CreateMaterial::metal(glm::vec3(0.7f, 0.6f, 0.5f), 0.0f);
-    Sphere s_big_metal{glm::vec3(4.0f, 1.0f, 0.0f), 1.0f, material_index++, texture_index++};
+    Sphere s_big_metal{
+        glm::vec3(4.0f, 1.0f, 0.0f),
+        1.0f, material_index++, texture_index++, METAL};
     materials.push_back(m_big_metal);
     world.push_back(s_big_metal);
 }
@@ -108,16 +130,21 @@ void createSimpleTestScene(
 {
 
     ConstantTexture ctex_0 = CreateMaterial::ctex(glm::vec4(0.1f, 0.1f, 0.1f, 0.0f));
+    CheckTexture check_tex_0 = CreateMaterial::checktex(
+            glm::vec4(0.1f, 0.1f, 0.1f, 1.0f),
+            glm::vec4(1.0f, .67f, .0f, 1.0f));
     Material dielectric_0 = CreateMaterial::dielectric(1.5);
     Material lambertian_1 = CreateMaterial::lambertian(glm::vec3(0.1f, 0.2f, 0.5f));
     Material metal_2 = CreateMaterial::metal(glm::vec3(0.8f, 0.6f, 0.2f), 0.1f);
 
     Sphere sphere0{glm::vec3(0,-0.0f,-1.2), 0.5, 1, -1, LAMBERTIAN};
-    Sphere sphere1{glm::vec3(0,-100.5,-1), 100, -1, 0, SOLID_TEXTURE};
-    Sphere sphere2{glm::vec3(1,-0.0f,-1), 0.5, 2, 0, METAL};
-    Sphere sphere3{glm::vec3(-1,-0.0f,-1), 0.5, 0, 0, DIELECTRIC};
+    Sphere sphere1{glm::vec3(0,-100.5,-1), 100, -1, 0, CHECKER_TEXTURE};
+    Sphere sphere2{glm::vec3(1,-0.0f,-1), 0.5, 2, -1, METAL};
+    Sphere sphere3{glm::vec3(-1,-0.0f,-1), 0.5, 0, -1, DIELECTRIC};
 
     ctex.push_back(ctex_0);
+
+    checktex.push_back(check_tex_0);
 
     materials.push_back(dielectric_0);
     materials.push_back(lambertian_1);
@@ -147,6 +174,9 @@ void createTestScene(
     Material lambertian_1 = CreateMaterial::lambertian(glm::vec3(0.8f, 0.8f, 0.0f));
 
     ConstantTexture ctex_0 = CreateMaterial::ctex(glm::vec4(0.8f, 0.8f, 0.0f, 0.0f));
+    CheckTexture check_tex_0 = CreateMaterial::checktex(
+            glm::vec4(0.2f, 0.3f, 0.1f, 1.0f),
+            glm::vec4(1.0f, 1.0f, 0.0f, 1.0f));
 
     Material metal_2 = CreateMaterial::metal(glm::vec3(0.8f, 0.6f, 0.2f), 0.1f);
     Material metal_3 = CreateMaterial::metal(glm::vec3(0.8f, 0.8f, 0.8f), 1.0f);
@@ -177,6 +207,8 @@ void createTestScene(
             sphere3,
             sphere4,
     };
+
+    checktex.push_back(check_tex_0);
 
     ctex = {
         ctex_0
@@ -221,8 +253,8 @@ int main() {
     std::cout << sizeof(a) << std::endl;
     std::cout << sizeof(struct CameraBlock) << std::endl;
 
-    window w(1280, 720);
-    // window w(1920, 1080);
+    //window w(1280, 720);
+    window w(1920, 1080);
     // window w(4000, 4000);
     w.init();
     w.setWindowHints(GLFW_CONTEXT_VERSION_MAJOR, 4);
@@ -242,7 +274,7 @@ int main() {
 
     //glm::vec3 lookfrom = glm::vec3(13.0f, 3.0f, 3.14f);
     glm::vec3 lookfrom = glm::vec3(0.0f, 1.5f, 5.14f);
-    glm::vec3 lookat = glm::vec3(0.0f, 0.0f, 0.0f);
+    glm::vec3 lookat = glm::vec3(0.0f, 0.5f, 0.0f);
     glm::vec3 vup = glm::vec3(0.0f, 1.0f, 0.0f);
     float dist_to_focus = glm::length(lookfrom - lookat);
     CameraBlock camblock;
@@ -255,8 +287,8 @@ int main() {
     std::vector<CheckTexture> checktex;
 
     //createRandomWorld(world, materials, ctex, checktex);
-    createTestScene(world, materials, ctex, checktex);
-    //createSimpleTestScene(world, materials, ctex, checktex);
+    //createTestScene(world, materials, ctex, checktex);
+    createSimpleTestScene(world, materials, ctex, checktex);
 
 
     // vao and vbo handle
@@ -330,26 +362,32 @@ int main() {
     unsigned int cameraBlock;
     glGenBuffers(1, &cameraBlock);
     glBindBuffer(GL_UNIFORM_BUFFER, cameraBlock);
-    glBufferData(GL_UNIFORM_BUFFER, sizeof(struct CameraBlock), NULL, GL_STATIC_DRAW); // allocate 152 bytes of memory
+    glBufferData(GL_UNIFORM_BUFFER, sizeof(struct CameraBlock), nullptr, GL_STATIC_DRAW); // allocate 152 bytes of memory
     glBindBuffer(GL_UNIFORM_BUFFER, 0);
     s.setCamUbo("CameraBlock", camblock, cameraBlock);
 
     unsigned int sphereBlock;
     glGenBuffers(1, &sphereBlock);
     glBindBuffer(GL_UNIFORM_BUFFER, sphereBlock);
-    glBufferData(GL_UNIFORM_BUFFER, sizeof(Sphere) * world.size(), NULL, GL_STATIC_DRAW);
+    glBufferData(GL_UNIFORM_BUFFER, sizeof(Sphere) * world.size(), nullptr, GL_STATIC_DRAW);
     glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
     unsigned int materialBlock;
     glGenBuffers(1, &materialBlock);
     glBindBuffer(GL_UNIFORM_BUFFER, materialBlock);
-    glBufferData(GL_UNIFORM_BUFFER, sizeof(pak_mat), NULL, GL_STATIC_DRAW);
+    glBufferData(GL_UNIFORM_BUFFER, sizeof(pak_mat), nullptr, GL_STATIC_DRAW);
     glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
     unsigned int constantTextureBlock;
     glGenBuffers(1, &constantTextureBlock);
     glBindBuffer(GL_UNIFORM_BUFFER, constantTextureBlock);
-    glBufferData(GL_UNIFORM_BUFFER, sizeof(ConstantTexture), NULL, GL_STATIC_DRAW);
+    glBufferData(GL_UNIFORM_BUFFER, sizeof(ConstantTexture) * ctex.size(), nullptr, GL_STATIC_DRAW);
+    glBindBuffer(GL_UNIFORM_BUFFER, 0);
+
+    unsigned int checkerTextureBlock;
+    glGenBuffers(1, &checkerTextureBlock);
+    glBindBuffer(GL_UNIFORM_BUFFER, checkerTextureBlock);
+    glBufferData(GL_UNIFORM_BUFFER, sizeof(CheckTexture) * checktex.size(), nullptr, GL_STATIC_DRAW);
     glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
 
@@ -376,7 +414,7 @@ int main() {
         //lookfrom.y += 0.005f;
         //lookfrom.z -= 0.05f;
         //Camera cam(lookfrom, lookat, vup, 20, (float)w.framebuffer_width / (float)w.framebuffer_height, 1/frameCount, dist_to_focus, &w);
-        //frameCount = 1;
+        frameCount = 1;
         //debugCamera(cam);
 
         // clear first
@@ -399,8 +437,8 @@ int main() {
 
         s.setMaterialUbo("MaterialBlock", materials, materialBlock);
         s.setConstantTextureUbo("ConstantTextureBlock", ctex, constantTextureBlock);
+        s.setCheckerTextureUbo("CheckerTextureBlock", checktex, checkerTextureBlock);
         s.setSphereUbo("SphereBlock", world, sphereBlock);
-        //s.setIntArray("material_type", matType.data(), matType.size());
         s.setVec2("props", glm::vec2(w.framebuffer_width, w.framebuffer_height));
 
         glBindVertexArray(vao);
@@ -457,6 +495,8 @@ int main() {
 
         // finally swap buffers
         glfwSwapBuffers(w.getGLFWWindow());
+
+        updateSpheres(world, delta);
 
         // Ping-pong for next frame
         currentAccumIndex = 1 - currentAccumIndex;

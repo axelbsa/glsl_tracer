@@ -78,12 +78,12 @@ layout (std140) uniform SphereBlock
 
 layout (std140) uniform ConstantTextureBlock
 {
-    ConstantTexture ctex[MAX_MATERIALS];
+    ConstantTexture ctex[10];
 };
 
-layout (std140) uniform CheckTextureBlock
+layout (std140) uniform CheckerTextureBlock
 {
-    CheckTexture checktex[MAX_MATERIALS];
+    CheckTexture checktex[10];
 };
 
 // This is a little stupid, but values comes in quadruplets, albedo[0], roughness[0], fuzz[0], ior[0] defines 1 material
@@ -268,6 +268,19 @@ bool lambertian_texture(Ray r, inout hit_record rec, inout vec3 attenuation, ino
     return true;
 }
 
+bool checker_texture(Ray r, inout hit_record rec, inout vec3 attenuation, inout Ray scattered, inout uint state)
+{
+    vec3 target = rec.p + rec.normal + random_in_unit_sphere2(state);
+    scattered = Ray(rec.p, target - rec.p);
+    float sines = sin( 10 * rec.p.x ) * sin(10 * rec.p.y) * sin(10 * rec.p.z);
+    if (sines < 0) {
+        attenuation = checktex[rec.texture_index].odd;
+    } else {
+        attenuation = checktex[rec.texture_index].even;
+    }
+    return true;
+}
+
 bool lambertian_material(Ray r, inout hit_record rec, inout vec3 attenuation, inout Ray scattered, inout uint state)
 {
     vec3 target = rec.p + rec.normal + random_in_unit_sphere2(state);
@@ -448,6 +461,13 @@ vec3 color(Ray r, inout uint state, inout vec2 state2)
                 } else {
                     return vec3(0.0,0.0,0.0);
                 }
+            } else if (rec.material_type == CHECKER_TEXTURE) {
+                if(checker_texture(cur_ray, rec, attenuation, scattered, state)) {
+                    cur_attenuation *= attenuation;
+                    cur_ray = scattered;
+                } else {
+                    return vec3(0.0,0.0,0.0);
+                }
             }
         } else {
             vec3 unit_direction = normalize(direction(cur_ray));
@@ -470,7 +490,7 @@ void main() {
 
     vec3 col = vec3(0.0f);
 
-#define ns 1
+#define ns 4
     for (int i = 0; i < ns; i++) {
         float u = float(gl_FragCoord.x + RandomValue(state)) / float(props.x);
         float v = float(gl_FragCoord.y + RandomValue(state)) / float(props.y);
