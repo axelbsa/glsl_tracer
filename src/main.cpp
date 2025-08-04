@@ -39,13 +39,13 @@ inline double random_double(double min, double max) {
 
 void updateSpheres(std::vector<Sphere> &world, double delta_time)
 {
-    //int randomSphere = std::rand() % world.size();
-    world[2].center.y += sin(0.001) * delta_time;
-    world[2].center.x -= sin(0.0001);
+    int randomSphere = std::rand() % world.size();
+    world[2].center.y += 0.1 * delta_time;
+    world[2].center.x -= 0.01 * delta_time;
 
-    world[3].center.y -= sin(0.001);
-    world[3].center.x += sin(0.0004);
-    world[3].center.z += sin(0.0005);
+    world[3].center.y -= 0.1 * delta_time;
+    world[3].center.x += 0.04 * delta_time;
+    world[3].center.z += 0.05 * delta_time;
 
 }
 
@@ -141,6 +141,7 @@ void createSimpleTestScene(
     Sphere sphere1{glm::vec3(0,-100.5,-1), 100, -1, 0, CHECKER_TEXTURE};
     Sphere sphere2{glm::vec3(1,-0.0f,-1), 0.5, 2, -1, METAL};
     Sphere sphere3{glm::vec3(-1,-0.0f,-1), 0.5, 0, -1, DIELECTRIC};
+    Sphere sphere4{glm::vec3(-1,-0.0f,-1), -0.499, 0, -1, DIELECTRIC};
 
     ctex.push_back(ctex_0);
 
@@ -154,6 +155,7 @@ void createSimpleTestScene(
     world.push_back(sphere1);
     world.push_back(sphere2);
     world.push_back(sphere3);
+    world.push_back(sphere4);
 
     for (auto m: matType) {
         fprintf(stderr, "Material type: %d\n", m);
@@ -410,7 +412,7 @@ int main() {
         currentTime = glfwGetTime();
         delta = currentTime - previousTime;
 
-        lookfrom.x -= 0.05f;
+        //lookfrom.x -= 0.05f;
         //lookfrom.y += 0.005f;
         //lookfrom.z -= 0.05f;
         //Camera cam(lookfrom, lookat, vup, 20, (float)w.framebuffer_width / (float)w.framebuffer_height, 1/frameCount, dist_to_focus, &w);
@@ -483,15 +485,15 @@ int main() {
         }
 
         // If a second has passed.
-        if ( delta >= 1.0 )
-        {
+        //if ( currentTime - previousTime >= 1.0 )
+        //{
             char title [256] = {"\0"};
             snprintf ( title, 255,"%s - [FPS: %3.4f]", "GLSL RTIW", (float)fpsCounter / delta );
             glfwSetWindowTitle (w.getGLFWWindow(), title);
 
             fpsCounter = 0;
-            previousTime = currentTime;
-        }
+        //}
+        previousTime = currentTime;
 
         // finally swap buffers
         glfwSwapBuffers(w.getGLFWWindow());

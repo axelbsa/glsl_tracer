@@ -452,6 +452,27 @@ bool metal_material(Ray r, inout hit_record rec, inout vec3 attenuation, inout R
     return ( dot( direction(scattered), rec.normal ) > 0 );
 }
 
+bool lamb_metal_material(Ray r, inout hit_record rec, inout vec3 attenuation, inout Ray scattered, inout uint state)
+{
+    vec3 reflected = reflect( normalize(direction(r)), rec.normal );
+    bool isSpecularBounce = bool(0.1 >= RandomValue(state));
+
+    if (isSpecularBounce)
+    {
+        scattered = Ray(rec.p, reflected + material_fuzz[rec.material_index]*random_in_unit_sphere2(state));
+        attenuation = material_albedo[rec.material_index];
+        return ( dot( direction(scattered), rec.normal ) > 0 );
+    }
+    else
+    {
+        vec3 target = rec.p + rec.normal + random_in_unit_sphere2(state);
+        scattered = Ray(rec.p, target - rec.p);
+        attenuation = material_albedo[rec.material_index];
+        return true;
+    }
+
+}
+
 bool _refract(vec3 v, vec3 n, float ni_over_nt, inout vec3 refracted)
 {
     vec3 uv = normalize(v);
@@ -602,6 +623,13 @@ vec3 color(Ray r, inout uint state, inout vec2 state2)
 
             } else if (rec.material_type == DIELECTRIC) {
                 if (dielectric(cur_ray, rec, attenuation, scattered, state)) {
+                    cur_attenuation *= attenuation;
+                    cur_ray = scattered;
+                } else {
+                    return vec3(0.0,0.0,0.0);
+                }
+            } else if (rec.material_type == LAMB_METAL) {
+                if(lamb_metal_material(cur_ray, rec, attenuation, scattered, state)) {
                     cur_attenuation *= attenuation;
                     cur_ray = scattered;
                 } else {
