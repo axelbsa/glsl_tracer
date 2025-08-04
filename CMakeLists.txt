@@ -65,6 +65,12 @@ else()
             src/sphere.h
             src/camera2.h)
 
+    target_include_directories(main PRIVATE
+        ${CMAKE_SOURCE_DIR}/src
+        ${CMAKE_SOURCE_DIR}/src/glad
+        ${CMAKE_SOURCE_DIR}/src/KHR
+    )
+
     set_target_properties(${PROJECT_NAME} PROPERTIES
             RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}
     )

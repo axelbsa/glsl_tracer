@@ -39,8 +39,8 @@ inline double random_double(double min, double max) {
 
 void updateSpheres(std::vector<Sphere> &world, double delta_time)
 {
-    int randomSphere = std::rand() % world.size();
-    world[2].center.y += sin(0.001);
+    //int randomSphere = std::rand() % world.size();
+    world[2].center.y += sin(0.001) * delta_time;
     world[2].center.x -= sin(0.0001);
 
     world[3].center.y -= sin(0.001);
@@ -137,7 +137,7 @@ void createSimpleTestScene(
     Material lambertian_1 = CreateMaterial::lambertian(glm::vec3(0.1f, 0.2f, 0.5f));
     Material metal_2 = CreateMaterial::metal(glm::vec3(0.8f, 0.6f, 0.2f), 0.1f);
 
-    Sphere sphere0{glm::vec3(0,-0.0f,-1.2), 0.5, 1, -1, LAMBERTIAN};
+    Sphere sphere0{glm::vec3(0,-0.0f,-1.2), 0.5, 1, -1, NOISE_TEXTURE};
     Sphere sphere1{glm::vec3(0,-100.5,-1), 100, -1, 0, CHECKER_TEXTURE};
     Sphere sphere2{glm::vec3(1,-0.0f,-1), 0.5, 2, -1, METAL};
     Sphere sphere3{glm::vec3(-1,-0.0f,-1), 0.5, 0, -1, DIELECTRIC};
@@ -313,10 +313,10 @@ int main() {
 
     // set up generic attrib pointers
     glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5*sizeof(GLfloat), (char*)0 + 0*sizeof(GLfloat));
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5*sizeof(GLfloat), (void *)(0*sizeof(GLfloat)));
 
     glEnableVertexAttribArray(1);
-    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5*sizeof(GLfloat), (char*)0 + 3*sizeof(GLfloat));
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5*sizeof(GLfloat), (void *)(3*sizeof(GLfloat))); // <- Legacy: ptr value is offset
 
     // generate and bind the index buffer object
     glGenBuffers(1, &ibo);
@@ -414,7 +414,7 @@ int main() {
         //lookfrom.y += 0.005f;
         //lookfrom.z -= 0.05f;
         //Camera cam(lookfrom, lookat, vup, 20, (float)w.framebuffer_width / (float)w.framebuffer_height, 1/frameCount, dist_to_focus, &w);
-        frameCount = 1;
+        //frameCount = 1;
         //debugCamera(cam);
 
         // clear first
@@ -496,7 +496,7 @@ int main() {
         // finally swap buffers
         glfwSwapBuffers(w.getGLFWWindow());
 
-        updateSpheres(world, delta);
+        //updateSpheres(world, delta);
 
         // Ping-pong for next frame
         currentAccumIndex = 1 - currentAccumIndex;
@@ -505,7 +505,6 @@ int main() {
     }
 
     // delete the created objects
-
     glDeleteTextures(1, &currentSampleTexture);
     glDeleteTextures(1, &accumulatedTexture[0]);
     glDeleteTextures(1, &accumulatedTexture[1]);

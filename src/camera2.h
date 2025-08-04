@@ -44,11 +44,6 @@ public:
         u = glm::normalize(glm::cross(vup, w));
         v = glm::cross(w, u);
 
-//        lower_left_corner = origin - horizontal/2.0f - vertical/2.0f - glm::vec3(0.0f, 0.0f, focal_length);
-//        horizontal = glm::vec3(viewport_width, 0.0f, 0.0f);
-//        vertical = glm::vec3(0.0f, viewport_height, 0.0f);
-
-        // lower_left_corner = glm::vec3(-half_width, -half_height, -1.0f);
         lower_left_corner = origin - half_width * focus_dist * u - half_height * focus_dist * v - focus_dist * w;
         horizontal = 2 * half_width * focus_dist * u;
         vertical = 2 * half_height * focus_dist * v;
