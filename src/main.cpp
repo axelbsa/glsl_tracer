@@ -20,6 +20,8 @@
 #include "sphere.h"
 #include "material.h"
 #include "camera2.h"
+#include "perlin.h"
+#include "utils.h"
 
 //void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
 //{
@@ -27,15 +29,6 @@
 //        glfwSetWindowShouldClose(window, true);
 //}
 
-inline double random_double() {
-    // Returns a random real in [0,1).
-    return std::rand() / (RAND_MAX + 1.0);
-}
-
-inline double random_double(double min, double max) {
-    // Returns a random real in [min,max).
-    return min + (max-min)*random_double();
-}
 
 void updateSpheres(std::vector<Sphere> &world, double delta_time)
 {
@@ -137,8 +130,9 @@ void createSimpleTestScene(
     Material lambertian_1 = CreateMaterial::lambertian(glm::vec3(0.1f, 0.2f, 0.5f));
     Material metal_2 = CreateMaterial::metal(glm::vec3(0.8f, 0.6f, 0.2f), 0.1f);
 
-    Sphere sphere0{glm::vec3(0,-0.0f,-1.2), 0.5, 1, -1, LAMBERTIAN};
-    Sphere sphere1{glm::vec3(0,-100.5,-1), 100, -1, 0, CHECKER_TEXTURE};
+    Sphere sphere0{glm::vec3(0,2.0f,-1.2), 2, 1, -1, NOISE_TEXTURE};
+    //Sphere sphere1{glm::vec3(0,-100.5,-1), 100, -1, 0, CHECKER_TEXTURE};
+    Sphere sphere1{glm::vec3(0,-1000,-1), 1000, -1, 0, NOISE_TEXTURE};
     Sphere sphere2{glm::vec3(1,-0.0f,-1), 0.5, 2, -1, METAL};
     Sphere sphere3{glm::vec3(-1,-0.0f,-1), 0.5, 0, -1, DIELECTRIC};
     Sphere sphere4{glm::vec3(-1,-0.0f,-1), -0.499, 0, -1, DIELECTRIC};
@@ -153,9 +147,9 @@ void createSimpleTestScene(
 
     world.push_back(sphere0);
     world.push_back(sphere1);
-    world.push_back(sphere2);
-    world.push_back(sphere3);
-    world.push_back(sphere4);
+    //world.push_back(sphere2);
+    //world.push_back(sphere3);
+    //world.push_back(sphere4);
 
     for (auto m: matType) {
         fprintf(stderr, "Material type: %d\n", m);
@@ -275,14 +269,16 @@ int main() {
     Shader t("glsl/texture.vert", "glsl/texture.frag");
 
     //glm::vec3 lookfrom = glm::vec3(13.0f, 3.0f, 3.14f);
-    glm::vec3 lookfrom = glm::vec3(0.0f, 1.5f, 5.14f);
+    glm::vec3 lookfrom = glm::vec3(13.0f, 1.5f, 3.14f);
     glm::vec3 lookat = glm::vec3(0.0f, 0.5f, 0.0f);
     glm::vec3 vup = glm::vec3(0.0f, 1.0f, 0.0f);
     float dist_to_focus = glm::length(lookfrom - lookat);
+
     CameraBlock camblock;
     Camera cam(lookfrom, lookat, vup, 20, (float)w.framebuffer_width / (float)w.framebuffer_height, 0.0f, dist_to_focus, &w);
     cam.createCamUBO(camblock);
 
+    Perlin perlin;
     std::vector<Sphere> world;
     std::vector<Material> materials;
     std::vector<ConstantTexture> ctex;
@@ -392,6 +388,12 @@ int main() {
     glBufferData(GL_UNIFORM_BUFFER, sizeof(CheckTexture) * checktex.size(), nullptr, GL_STATIC_DRAW);
     glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
+    unsigned int perlinTextureBlock;
+    glGenBuffers(1, &perlinTextureBlock);
+    glBindBuffer(GL_UNIFORM_BUFFER, perlinTextureBlock);
+    glBufferData(GL_UNIFORM_BUFFER, sizeof(PerlinBlock), nullptr, GL_STATIC_DRAW);
+    glBindBuffer(GL_UNIFORM_BUFFER, 0);
+
 
 /*
     if(glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
@@ -437,6 +439,7 @@ int main() {
         cam.createCamUBO(camblock);
         s.setCamUbo("CameraBlock", camblock, cameraBlock);
 
+        s.setPerlinDataUbo("PerlinBlock", perlin.pb, perlinTextureBlock);
         s.setMaterialUbo("MaterialBlock", materials, materialBlock);
         s.setConstantTextureUbo("ConstantTextureBlock", ctex, constantTextureBlock);
         s.setCheckerTextureUbo("CheckerTextureBlock", checktex, checkerTextureBlock);

@@ -7,6 +7,7 @@
 #ifndef MATERIAL_H
 #define MATERIAL_H
 #define MAX_MATERIALS 512
+#define PN_POINT_COUNT 256
 
 
 enum MaterialType {
@@ -70,6 +71,11 @@ struct CreateMaterial{
     {
         //matType.push_back(CHECKER_TEXTURE);
         return CheckTexture{.odd = odd, .even = even};
+    }
+
+    static double random_double() {
+        // Returns a random real in [0,1).
+        return std::rand() / (RAND_MAX + 1.0);
     }
 };
 

@@ -17,6 +17,9 @@
 #define CHECKER_TEXTURE 5
 #define NOISE_TEXTURE 6
 
+// Used for perlin noise
+#define POINT_COUNT 256
+
 
 struct Camera {
     vec3 lower_left_corner;
@@ -66,6 +69,7 @@ uniform vec2 props;
 uniform int NUM_SPHERES;
 uniform int frame_number;
 
+
 layout (std140) uniform CameraBlock
 {
     Camera cam;
@@ -95,12 +99,22 @@ layout (std140) uniform MaterialBlock
     uniform float material_ior[MAX_MATERIALS];
 };
 
+layout (std140) uniform PerlinBlock
+{
+    // Perlin noise from CPU
+    uniform float randfloat[POINT_COUNT];
+    uniform int perm_x[POINT_COUNT];
+    uniform int perm_y[POINT_COUNT];
+    uniform int perm_z[POINT_COUNT];
+};
+
 in vec2 ftexcoord;
 in vec4 gl_FragCoord;
 
 layout(location = 0) out vec4 FragColor;
 
 float g_seed = 0.25;
+
 
 vec3 linearToSRGB(vec3 color) {
     bvec3 cutoff = lessThan(color, vec3(0.0031308));
@@ -145,155 +159,6 @@ vec3 lottes(vec3 x) {
     return pow(x, a) / (pow(x, a * d) * b + c);
 }
 
-
-vec3 mod289(vec3 x)
-{
-  return x - floor(x * (1.0 / 289.0)) * 289.0;
-}
-
-vec4 mod289(vec4 x)
-{
-  return x - floor(x * (1.0 / 289.0)) * 289.0;
-}
-
-vec4 permute(vec4 x)
-{
-  return mod289(((x*34.0)+10.0)*x);
-}
-
-vec4 taylorInvSqrt(vec4 r)
-{
-  return 1.79284291400159 - 0.85373472095314 * r;
-}
-
-vec3 fade(vec3 t) {
-  return t*t*t*(t*(t*6.0-15.0)+10.0);
-}
-
-// Classic Perlin noise
-float cnoise(vec3 P)
-{
-  vec3 Pi0 = floor(P); // Integer part for indexing
-  vec3 Pi1 = Pi0 + vec3(1.0); // Integer part + 1
-  Pi0 = mod289(Pi0);
-  Pi1 = mod289(Pi1);
-  vec3 Pf0 = fract(P); // Fractional part for interpolation
-  vec3 Pf1 = Pf0 - vec3(1.0); // Fractional part - 1.0
-  vec4 ix = vec4(Pi0.x, Pi1.x, Pi0.x, Pi1.x);
-  vec4 iy = vec4(Pi0.yy, Pi1.yy);
-  vec4 iz0 = Pi0.zzzz;
-  vec4 iz1 = Pi1.zzzz;
-
-  vec4 ixy = permute(permute(ix) + iy);
-  vec4 ixy0 = permute(ixy + iz0);
-  vec4 ixy1 = permute(ixy + iz1);
-
-  vec4 gx0 = ixy0 * (1.0 / 7.0);
-  vec4 gy0 = fract(floor(gx0) * (1.0 / 7.0)) - 0.5;
-  gx0 = fract(gx0);
-  vec4 gz0 = vec4(0.5) - abs(gx0) - abs(gy0);
-  vec4 sz0 = step(gz0, vec4(0.0));
-  gx0 -= sz0 * (step(0.0, gx0) - 0.5);
-  gy0 -= sz0 * (step(0.0, gy0) - 0.5);
-
-  vec4 gx1 = ixy1 * (1.0 / 7.0);
-  vec4 gy1 = fract(floor(gx1) * (1.0 / 7.0)) - 0.5;
-  gx1 = fract(gx1);
-  vec4 gz1 = vec4(0.5) - abs(gx1) - abs(gy1);
-  vec4 sz1 = step(gz1, vec4(0.0));
-  gx1 -= sz1 * (step(0.0, gx1) - 0.5);
-  gy1 -= sz1 * (step(0.0, gy1) - 0.5);
-
-  vec3 g000 = vec3(gx0.x,gy0.x,gz0.x);
-  vec3 g100 = vec3(gx0.y,gy0.y,gz0.y);
-  vec3 g010 = vec3(gx0.z,gy0.z,gz0.z);
-  vec3 g110 = vec3(gx0.w,gy0.w,gz0.w);
-  vec3 g001 = vec3(gx1.x,gy1.x,gz1.x);
-  vec3 g101 = vec3(gx1.y,gy1.y,gz1.y);
-  vec3 g011 = vec3(gx1.z,gy1.z,gz1.z);
-  vec3 g111 = vec3(gx1.w,gy1.w,gz1.w);
-
-  vec4 norm0 = taylorInvSqrt(vec4(dot(g000, g000), dot(g010, g010), dot(g100, g100), dot(g110, g110)));
-  vec4 norm1 = taylorInvSqrt(vec4(dot(g001, g001), dot(g011, g011), dot(g101, g101), dot(g111, g111)));
-
-  float n000 = norm0.x * dot(g000, Pf0);
-  float n010 = norm0.y * dot(g010, vec3(Pf0.x, Pf1.y, Pf0.z));
-  float n100 = norm0.z * dot(g100, vec3(Pf1.x, Pf0.yz));
-  float n110 = norm0.w * dot(g110, vec3(Pf1.xy, Pf0.z));
-  float n001 = norm1.x * dot(g001, vec3(Pf0.xy, Pf1.z));
-  float n011 = norm1.y * dot(g011, vec3(Pf0.x, Pf1.yz));
-  float n101 = norm1.z * dot(g101, vec3(Pf1.x, Pf0.y, Pf1.z));
-  float n111 = norm1.w * dot(g111, Pf1);
-
-  vec3 fade_xyz = fade(Pf0);
-  vec4 n_z = mix(vec4(n000, n100, n010, n110), vec4(n001, n101, n011, n111), fade_xyz.z);
-  vec2 n_yz = mix(n_z.xy, n_z.zw, fade_xyz.y);
-  float n_xyz = mix(n_yz.x, n_yz.y, fade_xyz.x);
-  return 2.2 * n_xyz;
-}
-
-float pnoise(vec3 P, vec3 rep)
-{
-  vec3 Pi0 = mod(floor(P), rep); // Integer part, modulo period
-  vec3 Pi1 = mod(Pi0 + vec3(1.0), rep); // Integer part + 1, mod period
-  Pi0 = mod289(Pi0);
-  Pi1 = mod289(Pi1);
-  vec3 Pf0 = fract(P); // Fractional part for interpolation
-  vec3 Pf1 = Pf0 - vec3(1.0); // Fractional part - 1.0
-  vec4 ix = vec4(Pi0.x, Pi1.x, Pi0.x, Pi1.x);
-  vec4 iy = vec4(Pi0.yy, Pi1.yy);
-  vec4 iz0 = Pi0.zzzz;
-  vec4 iz1 = Pi1.zzzz;
-
-  vec4 ixy = permute(permute(ix) + iy);
-  vec4 ixy0 = permute(ixy + iz0);
-  vec4 ixy1 = permute(ixy + iz1);
-
-  vec4 gx0 = ixy0 * (1.0 / 7.0);
-  vec4 gy0 = fract(floor(gx0) * (1.0 / 7.0)) - 0.5;
-  gx0 = fract(gx0);
-  vec4 gz0 = vec4(0.5) - abs(gx0) - abs(gy0);
-  vec4 sz0 = step(gz0, vec4(0.0));
-  gx0 -= sz0 * (step(0.0, gx0) - 0.5);
-  gy0 -= sz0 * (step(0.0, gy0) - 0.5);
-
-  vec4 gx1 = ixy1 * (1.0 / 7.0);
-  vec4 gy1 = fract(floor(gx1) * (1.0 / 7.0)) - 0.5;
-  gx1 = fract(gx1);
-  vec4 gz1 = vec4(0.5) - abs(gx1) - abs(gy1);
-  vec4 sz1 = step(gz1, vec4(0.0));
-  gx1 -= sz1 * (step(0.0, gx1) - 0.5);
-  gy1 -= sz1 * (step(0.0, gy1) - 0.5);
-
-  vec3 g000 = vec3(gx0.x,gy0.x,gz0.x);
-  vec3 g100 = vec3(gx0.y,gy0.y,gz0.y);
-  vec3 g010 = vec3(gx0.z,gy0.z,gz0.z);
-  vec3 g110 = vec3(gx0.w,gy0.w,gz0.w);
-  vec3 g001 = vec3(gx1.x,gy1.x,gz1.x);
-  vec3 g101 = vec3(gx1.y,gy1.y,gz1.y);
-  vec3 g011 = vec3(gx1.z,gy1.z,gz1.z);
-  vec3 g111 = vec3(gx1.w,gy1.w,gz1.w);
-
-  vec4 norm0 = taylorInvSqrt(vec4(dot(g000, g000), dot(g010, g010), dot(g100, g100), dot(g110, g110)));
-  vec4 norm1 = taylorInvSqrt(vec4(dot(g001, g001), dot(g011, g011), dot(g101, g101), dot(g111, g111)));
-
-  float n000 = norm0.x * dot(g000, Pf0);
-  float n010 = norm0.y * dot(g010, vec3(Pf0.x, Pf1.y, Pf0.z));
-  float n100 = norm0.z * dot(g100, vec3(Pf1.x, Pf0.yz));
-  float n110 = norm0.w * dot(g110, vec3(Pf1.xy, Pf0.z));
-  float n001 = norm1.x * dot(g001, vec3(Pf0.xy, Pf1.z));
-  float n011 = norm1.y * dot(g011, vec3(Pf0.x, Pf1.yz));
-  float n101 = norm1.z * dot(g101, vec3(Pf1.x, Pf0.y, Pf1.z));
-  float n111 = norm1.w * dot(g111, Pf1);
-
-  vec3 fade_xyz = fade(Pf0);
-  vec4 n_z = mix(vec4(n000, n100, n010, n110), vec4(n001, n101, n011, n111), fade_xyz.z);
-  vec2 n_yz = mix(n_z.xy, n_z.zw, fade_xyz.y);
-  float n_xyz = mix(n_yz.x, n_yz.y, fade_xyz.x);
-  return 2.2 * n_xyz;
-}
-
-
 float squared_length(vec3 v) {
     return v.x*v.x + v.y*v.y + v.z*v.z;
 }
@@ -332,11 +197,67 @@ float RandomValue(inout uint state)
     return result / 4294967295.0f;
 }
 
+double RandomValue(double min, double max, inout uint state) {
+    // Returns a random real in [min,max).
+    return min + (max-min)*RandomValue(state);
+}
+
+int random_int(int min, int max, inout uint state) {
+    // Returns a random integer in [min,max].
+    return int(RandomValue(min, max+1, state));
+}
+
 float schlick(float cosine, float ref_idx)
 {
     float r0 = (1 - ref_idx) / (1 + ref_idx);
     r0 = r0 * r0;
     return r0 + (1 - r0) * pow((1 - cosine), 5);
+}
+
+
+float trilinear_interp(float c[8], float u, float v, float w) {
+    float accum = 0.0;
+    accum += (0*u + (1-0)*(1-u)) * (0*v + (1-0)*(1-v)) * (0*w + (1-0)*(1-w)) * c[0];
+    accum += (0*u + (1-0)*(1-u)) * (0*v + (1-0)*(1-v)) * (1*w + (1-1)*(1-w)) * c[1];
+    accum += (0*u + (1-0)*(1-u)) * (1*v + (1-1)*(1-v)) * (0*w + (1-0)*(1-w)) * c[2];
+    accum += (0*u + (1-0)*(1-u)) * (1*v + (1-1)*(1-v)) * (1*w + (1-1)*(1-w)) * c[3];
+    accum += (1*u + (1-1)*(1-u)) * (0*v + (1-0)*(1-v)) * (0*w + (1-0)*(1-w)) * c[4];
+    accum += (1*u + (1-1)*(1-u)) * (0*v + (1-0)*(1-v)) * (1*w + (1-1)*(1-w)) * c[5];
+    accum += (1*u + (1-1)*(1-u)) * (1*v + (1-1)*(1-v)) * (0*w + (1-0)*(1-w)) * c[6];
+    accum += (1*u + (1-1)*(1-u)) * (1*v + (1-1)*(1-v)) * (1*w + (1-1)*(1-w)) * c[7];
+    return accum;
+}
+
+float perlin_noise(vec3 p)
+{
+    float u = p.x - floor(p.x);
+    float v = p.y - floor(p.y);
+    float w = p.z - floor(p.z);
+
+    u = u*u*(3-2*u);
+    v = v*v*(3-2*v);
+    w = w*w*(3-2*w);
+
+    int i = int(floor(p.x));
+    int j = int(floor(p.y));
+    int k = int(floor(p.z));
+
+    float a[8];
+
+    a[0] = randfloat[perm_x[(i+0) & 255] ^ perm_y[(j+0) & 255] ^ perm_z[(k+0) & 255]];
+    a[1] = randfloat[perm_x[(i+0) & 255] ^ perm_y[(j+0) & 255] ^ perm_z[(k+1) & 255]];
+
+    a[2] = randfloat[perm_x[(i+0) & 255] ^ perm_y[(j+1) & 255] ^ perm_z[(k+0) & 255]];
+    a[3] = randfloat[perm_x[(i+0) & 255] ^ perm_y[(j+1) & 255] ^ perm_z[(k+1) & 255]];
+
+    a[4] = randfloat[perm_x[(i+1) & 255] ^ perm_y[(j+0) & 255] ^ perm_z[(k+0) & 255]];
+    a[5] = randfloat[perm_x[(i+1) & 255] ^ perm_y[(j+0) & 255] ^ perm_z[(k+1) & 255]];
+
+    a[6] = randfloat[perm_x[(i+1) & 255] ^ perm_y[(j+1) & 255] ^ perm_z[(k+0) & 255]];
+    a[7] = randfloat[perm_x[(i+1) & 255] ^ perm_y[(j+1) & 255] ^ perm_z[(k+1) & 255]];
+
+    return trilinear_interp(a, u, v, w);
+    //return randfloat[perm_x[i] ^ perm_y[j] ^ perm_z[k]];
 }
 
 vec3 random_in_unit_sphere(vec3 p)
@@ -429,10 +350,10 @@ bool checker_texture(Ray r, inout hit_record rec, inout vec3 attenuation, inout 
 
 bool noise_texture(Ray r, inout hit_record rec, inout vec3 attenuation, inout Ray scattered, inout uint state)
 {
-    float scale = 0.4;
+    float scale = 4.0;
     vec3 target = rec.p + rec.normal + random_in_unit_sphere2(state);
     scattered = Ray(rec.p, target - rec.p);
-    attenuation = vec3(0.1, 0.1, 0.1) * scale * pnoise(rec.p, scale * vec3(1,1,1));
+    attenuation = vec3(1, 1, 1) * perlin_noise(scale * rec.p);
     return true;
 }
 
@@ -601,9 +522,14 @@ vec3 color(Ray r, inout uint state, inout vec2 state2)
     Ray cur_ray = r;
     vec3 cur_attenuation = vec3(1.0f);
     vec2 f = vec2(1.0);
+    bool perm_created = false;
     for(int i = 0; i < 50; i++) {
         hit_record rec;
         if ( hittable_list_hit(cur_ray, 0.001f, MAX_FLOAT, rec) ) {
+            if (perm_created == false) {
+                //perlin_noise(rec.p, state);
+                perm_created = true;
+            }
             Ray scattered;
             vec3 attenuation = vec3(0.0f);
             if (rec.material_type == LAMBERTIAN) {

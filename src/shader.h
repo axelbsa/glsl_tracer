@@ -27,6 +27,7 @@
 #include "glm/glm.hpp"
 #include "sphere.h"
 #include "camera2.h"
+#include "perlin.h"
 
 
 class Shader {
@@ -152,10 +153,7 @@ public:
             //setInt(base + ".material_type", spheres[i].material_type);
         }
         setInt("NUM_SPHERES", static_cast<int>(spheres.size()));
-
-
     }
-
 
     // activate the shader
     // ------------------------------------------------------------------------
@@ -279,6 +277,14 @@ public:
         glUniformBlockBinding(ID, blockIndex, 4);
         glBindBufferBase(GL_UNIFORM_BUFFER, 4, CheckerTextureBlock);
         glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(CheckTexture) * checkTex.size(), checkTex.data());
+        glBindBuffer(GL_UNIFORM_BUFFER, 0);
+    }
+
+    void setPerlinDataUbo(const std::string &name, const PerlinBlock &pb, const unsigned int UboBlock) const {
+        unsigned int blockIndex = glGetUniformBlockIndex(ID, name.c_str());
+        glUniformBlockBinding(ID, blockIndex, 5);
+        glBindBufferBase(GL_UNIFORM_BUFFER, 5, UboBlock);
+        glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(PerlinBlock), &pb);
         glBindBuffer(GL_UNIFORM_BUFFER, 0);
     }
 
