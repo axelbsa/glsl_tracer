@@ -16,6 +16,7 @@
 #define SOLID_TEXTURE 4
 #define CHECKER_TEXTURE 5
 #define NOISE_TEXTURE 6
+#define EMITTER 7
 
 // Used for perlin noise
 #define POINT_COUNT 256
@@ -388,7 +389,7 @@ bool checker_texture(Ray r, inout hit_record rec, inout vec3 attenuation, inout 
 
 bool noise_texture(Ray r, inout hit_record rec, inout vec3 attenuation, inout Ray scattered, inout uint state)
 {
-    float scale = -0.2;
+    float scale = 1.2;
     vec3 target = rec.p + rec.normal + random_in_unit_sphere2(state);
     scattered = Ray(rec.p, target - rec.p);
     //attenuation = vec3(1, 1, 1) * 0.5 * (1.0 + perlin_noise(scale * rec.p)); // 0.5 * (1.0 + ...) [-1,1] -> [0,1]
@@ -429,8 +430,8 @@ bool lamb_metal_material(Ray r, inout hit_record rec, inout vec3 attenuation, in
         vec3 target = rec.p + rec.normal + random_in_unit_sphere2(state);
         scattered = Ray(rec.p, target - rec.p);
         attenuation = material_albedo[rec.material_index];
-        return true;
     }
+    return true;
 
 }
 
@@ -566,10 +567,6 @@ vec3 color(Ray r, inout uint state, inout vec2 state2)
     for(int i = 0; i < 50; i++) {
         hit_record rec;
         if ( hittable_list_hit(cur_ray, 0.001f, MAX_FLOAT, rec) ) {
-            if (perm_created == false) {
-                //perlin_noise(rec.p, state);
-                perm_created = true;
-            }
             Ray scattered;
             vec3 attenuation = vec3(0.0f);
             if (rec.material_type == LAMBERTIAN) {
@@ -623,12 +620,16 @@ vec3 color(Ray r, inout uint state, inout vec2 state2)
                 } else {
                     return vec3(0.0,0.0,0.0);
                 }
+            } else if (rec.material_type == EMITTER) {
+                return material_albedo[rec.material_index] * cur_attenuation;
             }
         } else {
-            vec3 unit_direction = normalize(direction(cur_ray));
-            float t = 0.5f*(unit_direction.y + 1.0f);
-            vec3 c = (1.0f-t)*vec3(1.0, 1.0, 1.0) + t*vec3(0.5, 0.7, 1.0);
-            return cur_attenuation * c;
+            //vec3 unit_direction = normalize(direction(cur_ray));
+            //float t = 0.5f*(unit_direction.y + 1.0f);
+            //vec3 c = (1.0f-t)*vec3(1.0, 1.0, 1.0) + t*vec3(0.5, 0.7, 1.0);
+            //return cur_attenuation * c;
+            //return vec3(0.01) * cur_attenuation;
+            return vec3(0);
         }
     }
     return vec3(0.0f, 0.0f, 0.0f);
@@ -645,7 +646,7 @@ void main() {
 
     vec3 col = vec3(0.0f);
 
-#define ns 2
+#define ns 60
     for (int i = 0; i < ns; i++) {
         float u = float(gl_FragCoord.x + RandomValue(state)) / float(props.x);
         float v = float(gl_FragCoord.y + RandomValue(state)) / float(props.y);
@@ -668,6 +669,7 @@ void main() {
     //FragColor = vec4(col / float(ns), 1.0f);  // This is only color div by number of samples
     //FragColor = texture(tex, ftexcoord);
     col = col / ns;
+
     //col = lottes(col);
 
 /**

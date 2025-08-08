@@ -17,7 +17,8 @@ enum MaterialType {
     LAMB_METAL,
     SOLID_TEXTURE,
     CHECKER_TEXTURE,
-    NOISE_TEXTURE
+    NOISE_TEXTURE,
+    EMITTER
 };
 
 std::vector<int> matType;

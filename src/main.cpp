@@ -35,7 +35,7 @@ void updateSpheres(std::vector<Sphere> &world, double delta_time)
     int randomSphere = std::rand() % world.size();
     //world[1].center.y += 0.1 * delta_time;
     //world[1].center.x -= 0.01 * delta_time;
-    world[0].center.x -= 0.1 * delta_time;
+    world[5].center.x += 0.1 * delta_time;
 
    // world[3].center.y -= 0.1 * delta_time;
    // world[3].center.x += 0.04 * delta_time;
@@ -128,29 +128,36 @@ void createSimpleTestScene(
             glm::vec4(0.1f, 0.1f, 0.1f, 1.0f),
             glm::vec4(1.0f, .67f, .0f, 1.0f));
     Material dielectric_0 = CreateMaterial::dielectric(1.5);
-    Material lambertian_1 = CreateMaterial::lambertian(glm::vec3(0.1f, 0.2f, 0.5f));
-    Material metal_2 = CreateMaterial::metal(glm::vec3(0.8f, 0.6f, 0.2f), 0.1f);
+    Material lambertian_1 = CreateMaterial::lambertian(glm::vec3(0.4f, 0.2f, 0.5f));
+    Material metal_2 = CreateMaterial::metal(glm::vec3(0.8f, 0.6f, 0.9f), 0.5f);
+    Material lambertian_3 = CreateMaterial::lambertian(glm::vec3(320.0f, 320.0f, 320.0f));
+    Material lambertian_4 = CreateMaterial::lambertian(glm::vec3(0.1f, 0.2f, 0.5f));
 
-    Sphere sphere0{glm::vec3(0,2.0f,-1.2), 2, 1, -1, NOISE_TEXTURE};
-    //Sphere sphere1{glm::vec3(0,-100.5,-1), 100, -1, 0, CHECKER_TEXTURE};
-    Sphere sphere1{glm::vec3(0,-1000,-1), 1000, -1, 0, NOISE_TEXTURE};
+    Sphere sphere0{glm::vec3(0,0.0f,-1.2), 0.5f, 4, 0, NOISE_TEXTURE};
+    Sphere sphere1{glm::vec3(0,-100.5,-1), 100, -1, 0, CHECKER_TEXTURE};
+    //Sphere sphere1{glm::vec3(0,-1000,-1), 1000, -1, 0, NOISE_TEXTURE};
     Sphere sphere2{glm::vec3(1,-0.0f,-1), 0.5, 2, -1, METAL};
     Sphere sphere3{glm::vec3(-1,-0.0f,-1), 0.5, 0, -1, DIELECTRIC};
     Sphere sphere4{glm::vec3(-1,-0.0f,-1), -0.499, 0, -1, DIELECTRIC};
+    Sphere sphere5{glm::vec3(0,2.5f,-1.2), 0.5f, 3, 0, EMITTER};
+    Sphere sphere6{glm::vec3(-0.3,0.2f,5.7), 0.5f, 3, 0, EMITTER};
 
     ctex.push_back(ctex_0);
-
     checktex.push_back(check_tex_0);
 
     materials.push_back(dielectric_0);
     materials.push_back(lambertian_1);
     materials.push_back(metal_2);
+    materials.push_back(lambertian_3);
+    materials.push_back(lambertian_4);
 
     world.push_back(sphere0);
     world.push_back(sphere1);
-    //world.push_back(sphere2);
-    //world.push_back(sphere3);
-    //world.push_back(sphere4);
+    world.push_back(sphere2);
+    world.push_back(sphere3);
+    world.push_back(sphere4);
+    world.push_back(sphere5);
+    world.push_back(sphere6);
 
     for (auto m: matType) {
         fprintf(stderr, "Material type: %d\n", m);
@@ -251,8 +258,8 @@ int main() {
     std::cout << sizeof(struct CameraBlock) << std::endl;
 
     //window w(1280, 720);
-    window w(1920, 1080);
-    // window w(4000, 4000);
+    //window w(1920, 1080);
+    window w(4000, 4000);
     w.init();
     w.setWindowHints(GLFW_CONTEXT_VERSION_MAJOR, 4);
     w.setWindowHints(GLFW_CONTEXT_VERSION_MINOR, 1);
@@ -270,7 +277,7 @@ int main() {
     Shader t("glsl/texture.vert", "glsl/texture.frag");
 
     //glm::vec3 lookfrom = glm::vec3(13.0f, 3.0f, 3.14f);
-    glm::vec3 lookfrom = glm::vec3(13.0f, 1.5f, 3.14f);
+    glm::vec3 lookfrom = glm::vec3(0.0f, 2.0f, 5.14f);
     glm::vec3 lookat = glm::vec3(0.0f, 0.5f, 0.0f);
     glm::vec3 vup = glm::vec3(0.0f, 1.0f, 0.0f);
     float dist_to_focus = glm::length(lookfrom - lookat);
@@ -408,6 +415,7 @@ int main() {
     double currentTime = 0.0f;
     double delta = 0.0f;
     double previousTime = glfwGetTime();
+    double fpsTime = previousTime;
 
     while(!glfwWindowShouldClose(w.getGLFWWindow())) {
         glfwPollEvents();
@@ -489,20 +497,20 @@ int main() {
         }
 
         // If a second has passed.
-        //if ( currentTime - previousTime >= 1.0 )
-        //{
+        if ( currentTime - fpsTime >= 1.0 )
+        {
             char title [256] = {"\0"};
             snprintf ( title, 255,"%s - [FPS: %3.4f]", "GLSL RTIW", (float)fpsCounter / delta );
             glfwSetWindowTitle (w.getGLFWWindow(), title);
-
+            fpsTime = currentTime;
             fpsCounter = 0;
-        //}
+        }
         previousTime = currentTime;
 
         // finally swap buffers
         glfwSwapBuffers(w.getGLFWWindow());
 
-        updateSpheres(world, delta);
+        //updateSpheres(world, delta);
 
         // Ping-pong for next frame
         currentAccumIndex = 1 - currentAccumIndex;
