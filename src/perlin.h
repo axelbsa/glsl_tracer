@@ -11,7 +11,6 @@ static constexpr int point_count = 256;
 
 struct PerlinBlock
 {
-    //float randfloat[point_count];
     glm::vec4 randfloat[point_count];
     glm::ivec4 perm_x[point_count];
     glm::ivec4 perm_y[point_count];
@@ -23,7 +22,7 @@ public:
     PerlinBlock pb;
     Perlin(): pb() {
         for (int i = 0; i < point_count; i++) {
-            pb.randfloat[i] = glm::vec4(random_double(), random_double(), random_double(), 0);
+            pb.randfloat[i] = glm::vec4(random_double(-1, 1), random_double(-1, 1), random_double(-1, 1), 0);
         }
 
         perlin_generate_perm(pb.perm_x);

@@ -33,12 +33,13 @@
 void updateSpheres(std::vector<Sphere> &world, double delta_time)
 {
     int randomSphere = std::rand() % world.size();
-    world[2].center.y += 0.1 * delta_time;
-    world[2].center.x -= 0.01 * delta_time;
+    //world[1].center.y += 0.1 * delta_time;
+    //world[1].center.x -= 0.01 * delta_time;
+    world[0].center.x -= 0.1 * delta_time;
 
-    world[3].center.y -= 0.1 * delta_time;
-    world[3].center.x += 0.04 * delta_time;
-    world[3].center.z += 0.05 * delta_time;
+   // world[3].center.y -= 0.1 * delta_time;
+   // world[3].center.x += 0.04 * delta_time;
+   // world[3].center.z += 0.05 * delta_time;
 
 }
 
@@ -414,11 +415,11 @@ int main() {
         currentTime = glfwGetTime();
         delta = currentTime - previousTime;
 
-        //lookfrom.x -= 0.05f;
-        //lookfrom.y += 0.005f;
+        lookfrom.x -= 0.05f;
+        lookfrom.y += 0.005f;
         //lookfrom.z -= 0.05f;
         //Camera cam(lookfrom, lookat, vup, 20, (float)w.framebuffer_width / (float)w.framebuffer_height, 1/frameCount, dist_to_focus, &w);
-        //frameCount = 1;
+        frameCount = 1;
         //debugCamera(cam);
 
         // clear first
@@ -501,7 +502,7 @@ int main() {
         // finally swap buffers
         glfwSwapBuffers(w.getGLFWWindow());
 
-        //updateSpheres(world, delta);
+        updateSpheres(world, delta);
 
         // Ping-pong for next frame
         currentAccumIndex = 1 - currentAccumIndex;

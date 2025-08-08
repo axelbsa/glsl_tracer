@@ -102,7 +102,7 @@ layout (std140) uniform MaterialBlock
 layout (std140) uniform PerlinBlock
 {
     // Perlin noise from CPU
-    uniform float randfloat[POINT_COUNT];
+    uniform vec3 randfloat[POINT_COUNT];
     uniform int perm_x[POINT_COUNT];
     uniform int perm_y[POINT_COUNT];
     uniform int perm_z[POINT_COUNT];
@@ -214,6 +214,38 @@ float schlick(float cosine, float ref_idx)
     return r0 + (1 - r0) * pow((1 - cosine), 5);
 }
 
+float perlin_interp(const vec3 c[8], float u, float v, float w) {
+    float uu = u*u*(3-2*u);
+    float vv = v*v*(3-2*v);
+    float ww = w*w*(3-2*w);
+    float accum = 0.0;
+    vec3 weight_v = vec3(u-0, v-0, w-0);
+    accum += (0*uu + (1-0)*(1-uu)) * (0*vv + (1-0)*(1-vv)) * (0*ww + (1-0)*(1-ww)) * dot(c[0], weight_v);
+
+    weight_v = vec3(u-0, v-0, w-1);
+    accum += (0*uu + (1-0)*(1-uu)) * (0*vv + (1-0)*(1-vv)) * (1*ww + (1-1)*(1-ww)) * dot(c[1], weight_v);
+
+    weight_v = vec3(u-0, v-1, w-0);
+    accum += (0*uu + (1-0)*(1-uu)) * (1*vv + (1-1)*(1-vv)) * (0*ww + (1-0)*(1-ww)) * dot(c[2], weight_v);
+
+    weight_v = vec3(u-0, v-1, w-1);
+    accum += (0*uu + (1-0)*(1-uu)) * (1*vv + (1-1)*(1-vv)) * (1*ww + (1-1)*(1-ww)) * dot(c[3], weight_v);
+
+    weight_v = vec3(u-1, v-0, w-0);
+    accum += (1*uu + (1-1)*(1-uu)) * (0*vv + (1-0)*(1-vv)) * (0*ww + (1-0)*(1-ww)) * dot(c[4], weight_v);
+
+    weight_v = vec3(u-1, v-0, w-1);
+    accum += (1*uu + (1-1)*(1-uu)) * (0*vv + (1-0)*(1-vv)) * (1*ww + (1-1)*(1-ww)) * dot(c[5], weight_v);
+
+    weight_v = vec3(u-1, v-1, w-0);
+    accum += (1*uu + (1-1)*(1-uu)) * (1*vv + (1-1)*(1-vv)) * (0*ww + (1-0)*(1-ww)) * dot(c[6], weight_v);
+
+    weight_v = vec3(u-1, v-1, w-1);
+    accum += (1*uu + (1-1)*(1-uu)) * (1*vv + (1-1)*(1-vv)) * (1*ww + (1-1)*(1-ww)) * dot(c[7], weight_v);
+
+    return accum;
+}
+
 
 float trilinear_interp(float c[8], float u, float v, float w) {
     float accum = 0.0;
@@ -234,30 +266,36 @@ float perlin_noise(vec3 p)
     float v = p.y - floor(p.y);
     float w = p.z - floor(p.z);
 
-    u = u*u*(3-2*u);
-    v = v*v*(3-2*v);
-    w = w*w*(3-2*w);
-
     int i = int(floor(p.x));
     int j = int(floor(p.y));
     int k = int(floor(p.z));
 
-    float a[8];
-
+    vec3 a[8];
     a[0] = randfloat[perm_x[(i+0) & 255] ^ perm_y[(j+0) & 255] ^ perm_z[(k+0) & 255]];
     a[1] = randfloat[perm_x[(i+0) & 255] ^ perm_y[(j+0) & 255] ^ perm_z[(k+1) & 255]];
-
     a[2] = randfloat[perm_x[(i+0) & 255] ^ perm_y[(j+1) & 255] ^ perm_z[(k+0) & 255]];
     a[3] = randfloat[perm_x[(i+0) & 255] ^ perm_y[(j+1) & 255] ^ perm_z[(k+1) & 255]];
-
     a[4] = randfloat[perm_x[(i+1) & 255] ^ perm_y[(j+0) & 255] ^ perm_z[(k+0) & 255]];
     a[5] = randfloat[perm_x[(i+1) & 255] ^ perm_y[(j+0) & 255] ^ perm_z[(k+1) & 255]];
-
     a[6] = randfloat[perm_x[(i+1) & 255] ^ perm_y[(j+1) & 255] ^ perm_z[(k+0) & 255]];
     a[7] = randfloat[perm_x[(i+1) & 255] ^ perm_y[(j+1) & 255] ^ perm_z[(k+1) & 255]];
 
-    return trilinear_interp(a, u, v, w);
-    //return randfloat[perm_x[i] ^ perm_y[j] ^ perm_z[k]];
+    return perlin_interp(a, u, v, w);
+}
+
+
+float turb(const vec3 p, int depth) {
+    float accum = 0.0;
+    vec3 temp_p = p;
+    float weight = 1.0;
+
+    for (int i = 0; i < depth; i++) {
+        accum += weight * perlin_noise(temp_p);
+        weight *= 0.5;
+        temp_p *= 2;
+    }
+
+    return abs(accum);
 }
 
 vec3 random_in_unit_sphere(vec3 p)
@@ -350,10 +388,12 @@ bool checker_texture(Ray r, inout hit_record rec, inout vec3 attenuation, inout 
 
 bool noise_texture(Ray r, inout hit_record rec, inout vec3 attenuation, inout Ray scattered, inout uint state)
 {
-    float scale = 4.0;
+    float scale = -0.2;
     vec3 target = rec.p + rec.normal + random_in_unit_sphere2(state);
     scattered = Ray(rec.p, target - rec.p);
-    attenuation = vec3(1, 1, 1) * perlin_noise(scale * rec.p);
+    //attenuation = vec3(1, 1, 1) * 0.5 * (1.0 + perlin_noise(scale * rec.p)); // 0.5 * (1.0 + ...) [-1,1] -> [0,1]
+    //attenuation = vec3(1, 1, 1) * turb(rec.p, 7);
+    attenuation = vec3(.5, .5, .5) * (1.0 + sin(scale * rec.p.z + 10 * turb(rec.p, 7) ) );
     return true;
 }
 
@@ -605,7 +645,7 @@ void main() {
 
     vec3 col = vec3(0.0f);
 
-#define ns 6
+#define ns 2
     for (int i = 0; i < ns; i++) {
         float u = float(gl_FragCoord.x + RandomValue(state)) / float(props.x);
         float v = float(gl_FragCoord.y + RandomValue(state)) / float(props.y);
