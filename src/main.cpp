@@ -133,14 +133,14 @@ void createSimpleTestScene(
     Material lambertian_3 = CreateMaterial::lambertian(glm::vec3(320.0f, 320.0f, 320.0f));
     Material lambertian_4 = CreateMaterial::lambertian(glm::vec3(0.1f, 0.2f, 0.5f));
 
-    Sphere sphere0{glm::vec3(0,0.0f,-1.2), 0.5f, 4, 0, NOISE_TEXTURE};
+    Sphere sphere0{glm::vec3(0,0.0f,-1.2), 0.5f, 1, 0, LAMBERTIAN};
     Sphere sphere1{glm::vec3(0,-100.5,-1), 100, -1, 0, CHECKER_TEXTURE};
     //Sphere sphere1{glm::vec3(0,-1000,-1), 1000, -1, 0, NOISE_TEXTURE};
     Sphere sphere2{glm::vec3(1,-0.0f,-1), 0.5, 2, -1, METAL};
     Sphere sphere3{glm::vec3(-1,-0.0f,-1), 0.5, 0, -1, DIELECTRIC};
     Sphere sphere4{glm::vec3(-1,-0.0f,-1), -0.499, 0, -1, DIELECTRIC};
     Sphere sphere5{glm::vec3(0,2.5f,-1.2), 0.5f, 3, 0, EMITTER};
-    Sphere sphere6{glm::vec3(-0.3,0.2f,5.7), 0.5f, 3, 0, EMITTER};
+    Sphere sphere6{glm::vec3(-0.3,0.2f,2.7), 0.5f, 3, 0, EMITTER};
 
     ctex.push_back(ctex_0);
     checktex.push_back(check_tex_0);
@@ -427,7 +427,7 @@ int main() {
         lookfrom.y += 0.005f;
         //lookfrom.z -= 0.05f;
         //Camera cam(lookfrom, lookat, vup, 20, (float)w.framebuffer_width / (float)w.framebuffer_height, 1/frameCount, dist_to_focus, &w);
-        frameCount = 1;
+        //frameCount = 1;
         //debugCamera(cam);
 
         // clear first
@@ -500,7 +500,7 @@ int main() {
         if ( currentTime - fpsTime >= 1.0 )
         {
             char title [256] = {"\0"};
-            snprintf ( title, 255,"%s - [FPS: %3.4f]", "GLSL RTIW", (float)fpsCounter / delta );
+            snprintf ( title, 255,"%s - [FPS: %g]", "GLSL RTIW", (double)fpsCounter / delta );
             glfwSetWindowTitle (w.getGLFWWindow(), title);
             fpsTime = currentTime;
             fpsCounter = 0;

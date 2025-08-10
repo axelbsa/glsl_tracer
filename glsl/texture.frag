@@ -8,19 +8,21 @@ uniform sampler2D currentFrame;
 uniform sampler2D previousFrame;
 uniform int frameCount;
 
-vec4 accumulated;
-vec4 current;
+vec3 accumulated;
+vec3 current = texture(currentFrame, TexCoords.st).rgb;
+vec3 previous = texture(previousFrame, TexCoords.st).rgb;
+
+// This needs to match ns in the other shader
+// Only adjust if needed really
+#define ns 3
 
 void main()
 {
-    vec3 accumulated;
-    vec3 current = texture(currentFrame, TexCoords.st).rgb;
-    vec3 previous = texture(previousFrame, TexCoords.st).rgb;
     if (frameCount == 1) {
         // First frame: just use the current sample
         accumulated = current;
     } else {
-        accumulated = (previous * float(frameCount - 1) + current) / float(frameCount);
+        accumulated = (previous * float((frameCount - 1) * ns) + current) / float(frameCount * ns);
     }
     FragColor = vec4(accumulated, 1.0f);
 

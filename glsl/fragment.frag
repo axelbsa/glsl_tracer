@@ -22,6 +22,7 @@
 #define POINT_COUNT 256
 
 
+
 struct Camera {
     vec3 lower_left_corner;
     vec3 horizontal;
@@ -561,14 +562,13 @@ bool hittable_list_hit(Ray r, float t_min, float t_max, inout hit_record rec)
 vec3 color(Ray r, inout uint state, inout vec2 state2)
 {
     Ray cur_ray = r;
-    vec3 cur_attenuation = vec3(1.0f);
-    vec2 f = vec2(1.0);
-    bool perm_created = false;
+    vec3 cur_attenuation = vec3(1.0f); // Beta
+
     for(int i = 0; i < 50; i++) {
         hit_record rec;
         if ( hittable_list_hit(cur_ray, 0.001f, MAX_FLOAT, rec) ) {
             Ray scattered;
-            vec3 attenuation = vec3(0.0f);
+            vec3 attenuation = vec3(0.0f);  // L
             if (rec.material_type == LAMBERTIAN) {
                 if(lambertian_material(cur_ray, rec, attenuation, scattered, state)) {
                     cur_attenuation *= attenuation;
@@ -622,13 +622,15 @@ vec3 color(Ray r, inout uint state, inout vec2 state2)
                 }
             } else if (rec.material_type == EMITTER) {
                 return material_albedo[rec.material_index] * cur_attenuation;
+                //return vec3(1) * cur_attenuation;
             }
         } else {
-            //vec3 unit_direction = normalize(direction(cur_ray));
-            //float t = 0.5f*(unit_direction.y + 1.0f);
-            //vec3 c = (1.0f-t)*vec3(1.0, 1.0, 1.0) + t*vec3(0.5, 0.7, 1.0);
+            vec3 unit_direction = normalize(direction(cur_ray));
+            float t = 0.5f*(unit_direction.y + 1.0f);
+            vec3 c = (1.0f-t)*vec3(1.0, 1.0, 1.0) + t*vec3(0.5, 0.7, 1.0);
             //return cur_attenuation * c;
             //return vec3(0.01) * cur_attenuation;
+            //return c;
             return vec3(0);
         }
     }
@@ -646,7 +648,7 @@ void main() {
 
     vec3 col = vec3(0.0f);
 
-#define ns 60
+#define ns 3
     for (int i = 0; i < ns; i++) {
         float u = float(gl_FragCoord.x + RandomValue(state)) / float(props.x);
         float v = float(gl_FragCoord.y + RandomValue(state)) / float(props.y);
@@ -668,7 +670,7 @@ void main() {
 
     //FragColor = vec4(col / float(ns), 1.0f);  // This is only color div by number of samples
     //FragColor = texture(tex, ftexcoord);
-    col = col / ns;
+    //col = col / ns;
 
     //col = lottes(col);
 
